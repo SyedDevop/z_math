@@ -25,6 +25,44 @@ pub const Token = union(enum) {
         });
         return map.get(key);
     }
+
+    pub fn toString(self: Token) []const u8 {
+        var b: [17]u8 = undefined;
+        switch (self) {
+            .num => |n| {
+                return n;
+            },
+            .operator => |o| {
+
+                // const op = [_]u8{o};
+                // std.debug.print("the OP {c} \n", .{o});
+                _ = std.fmt.bufPrint(&b, "{c} ", .{o}) catch return "Error buffering in Token#toString";
+                return &b;
+            },
+            .lparen => return "(",
+            .rparen => return ")",
+            else => return " Dont Know this ",
+        }
+    }
+    pub fn arryToString(tokens: []Token) ![]const u8 {
+        var list = std.ArrayList(u8).init(std.heap.page_allocator);
+        defer list.deinit();
+
+        for (tokens) |token| {
+            switch (token) {
+                .num => |n| {
+                    try list.appendSlice(n);
+                },
+                .operator => |o| {
+                    try list.append(o);
+                },
+                else => {},
+            }
+            try list.appendSlice(" ");
+        }
+
+        return try list.toOwnedSlice();
+    }
 };
 fn isLetter(ch: u8) bool {
     return std.ascii.isAlphabetic(ch);
@@ -42,6 +80,7 @@ pub const Lexer = struct {
     position: usize = 0,
     ch: u8 = 0,
     input: []const u8,
+    buf: [1020]u8 = undefined,
 
     pub fn init(input: []const u8) Self {
         var lex = Self{
@@ -49,6 +88,13 @@ pub const Lexer = struct {
         };
         lex.readChar();
         return lex;
+    }
+    fn illegalTokenError(self: *Self) !void {
+        _ = try std.fmt.bufPrint(&self.buf,
+            \\the in put is ::{s}::
+            \\@ the index of {d} is a illegal {c}
+            \\
+        , .{ self.input, self.position, self.input[self.position] });
     }
     pub fn nextToke(self: *Self) Token {
         self.skipWhitespace();
@@ -82,7 +128,8 @@ pub const Lexer = struct {
                 return .{ .num = num };
             },
             else => {
-                return .{ .illegal = "Hello " };
+                self.illegalTokenError() catch return .{ .illegal = "unable to  Writing illegalTokenError" };
+                return .{ .illegal = &self.buf };
             },
         };
 

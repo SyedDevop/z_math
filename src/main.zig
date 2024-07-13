@@ -7,7 +7,49 @@ const print = std.debug.print;
 const Lexer = lexer.Lexer;
 const Token = lexer.Token;
 
-pub fn main() !void {}
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+
+    var lex = Lexer.init("5 + ((1 + 2) * 4) - 3");
+    var outList = std.ArrayList(Token).init(allocator);
+    defer outList.deinit();
+    var opList = std.ArrayList(Token).init(allocator);
+    defer opList.deinit();
+
+    while (lex.hasTokes()) {
+        const tok = lex.nextToke();
+        switch (tok) {
+            .num => {
+                var yes = false;
+                if (outList.items.len > 0) {
+                    yes = std.mem.eql(u8, @tagName(outList.getLast()), @tagName(tok));
+                }
+                if (opList.items.len > 0 and yes) {
+                    try outList.append(tok);
+                    try outList.append(opList.orderedRemove(0));
+                } else {
+                    try outList.append(tok);
+                }
+            },
+            .operator => {
+                try opList.append(tok);
+            },
+            .illegal => |il_tok| {
+                std.debug.print("{s}", .{il_tok});
+                break;
+            },
+            else => {},
+        }
+    }
+
+    if (opList.items.len > 0) {
+        try outList.appendSlice(opList.items);
+    }
+    std.debug.print("OutList is :: {s}\n", .{try Token.arryToString(outList.items)});
+    std.debug.print("OpList  is :: {s}\n", .{try Token.arryToString(opList.items)});
+}
 
 test "simple test" {
     var list = std.ArrayList(i32).init(std.testing.allocator);
