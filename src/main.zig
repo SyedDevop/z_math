@@ -1,9 +1,11 @@
 const std = @import("std");
-
+const lexer = @import("./lexer.zig");
 // 3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3
 //  3 4 2 * 1 5 - 2 3 ^ ^ / +
 
 const print = std.debug.print;
+const Lexer = lexer.Lexer;
+const Token = lexer.Token;
 
 pub fn main() !void {}
 
@@ -19,9 +21,8 @@ test "simple test" {
 
 const ex = std.testing.expectEqualDeep;
 test "Lexer" {
-    const lexer = @import("./lexer.zig");
-    var lex = lexer.Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3");
-    const tokens = [_]lexer.Token{
+    var lex = Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3");
+    const tokens = [_]Token{
         .{ .num = "3" },
         .{ .operator = '+' },
         .{ .num = "4" },
