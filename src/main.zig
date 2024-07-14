@@ -1,7 +1,12 @@
 const std = @import("std");
 const lexer = @import("./lexer.zig");
-// 3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3
-//  3 4 2 * 1 5 - 2 3 ^ ^ / +
+//Input           :: 3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3
+//Expected        :: 3 4 2 * 1 5 - 2 3 ^ ^ / +
+//Current OutPuth :: 3 4 + 2 1 * 5 2 / 3 - ^ ^
+
+//Input           :: 5 + ((1 + 2) * 4) - 3
+//Expected        :: 5 1 2 + 4 * + 3 -
+//Current OutPuth :: 5 1 + 2 4 + 3 * -
 
 const print = std.debug.print;
 const Lexer = lexer.Lexer;
@@ -12,7 +17,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var lex = Lexer.init("5 + ((1 + 2) * 4) - 3");
+    var lex = Lexer.init(" 3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3 ");
     var outList = std.ArrayList(Token).init(allocator);
     defer outList.deinit();
     var opList = std.ArrayList(Token).init(allocator);

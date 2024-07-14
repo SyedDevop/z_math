@@ -1,9 +1,16 @@
 const std = @import("std");
 pub const Token = union(enum) {
     operator: u8,
-    num: []const u8,
     function: []const u8,
     illegal: []const u8,
+
+    add,
+    sub,
+    mul,
+    div,
+    num: i64,
+    negate: u8,
+    id: u8,
 
     lparen,
     rparen,
