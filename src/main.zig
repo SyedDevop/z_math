@@ -17,35 +17,23 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var lex = Lexer.init(" 3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3 ");
+    var lex = Lexer.init(" 3 + 4 * 2 / ( 1 - 5 ) ^ -2 ^ 3 ");
     var outList = std.ArrayList(Token).init(allocator);
     defer outList.deinit();
     var opList = std.ArrayList(Token).init(allocator);
     defer opList.deinit();
 
     while (lex.hasTokes()) {
-        const tok = lex.nextToke();
+        const tok = try lex.nextToke();
+        // std.debug.print("{any}\n", .{tok});
         switch (tok) {
-            .num => {
-                var yes = false;
-                if (outList.items.len > 0) {
-                    yes = std.mem.eql(u8, @tagName(outList.getLast()), @tagName(tok));
-                }
-                if (opList.items.len > 0 and yes) {
-                    try outList.append(tok);
-                    try outList.append(opList.orderedRemove(0));
-                } else {
-                    try outList.append(tok);
-                }
-            },
-            .operator => {
-                try opList.append(tok);
-            },
             .illegal => |il_tok| {
                 std.debug.print("{s}", .{il_tok});
                 break;
             },
-            else => {},
+            else => {
+                try outList.append(tok);
+            },
         }
     }
 
@@ -53,7 +41,7 @@ pub fn main() !void {
         try outList.appendSlice(opList.items);
     }
     std.debug.print("OutList is :: {s}\n", .{try Token.arryToString(outList.items)});
-    std.debug.print("OpList  is :: {s}\n", .{try Token.arryToString(opList.items)});
+    // std.debug.print("OpList  is :: {s}\n", .{try Token.arryToString(opList.items)});
 }
 
 test "simple test" {
@@ -92,6 +80,7 @@ test "Lexer" {
         try ex(token, tok);
     }
 }
+
 fn testRpm(input: []const u8, expected_output: []const u8) !void {
     try std.testing.expectEqualSlices(u8, expected_output, input);
 }
