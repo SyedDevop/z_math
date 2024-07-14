@@ -1,16 +1,16 @@
 const std = @import("std");
 pub const Token = union(enum) {
+    num: i64,
     operator: u8,
     function: []const u8,
     illegal: []const u8,
 
-    add,
-    sub,
-    mul,
-    div,
-    num: i64,
-    negate: u8,
-    id: u8,
+    // add,
+    // sub,
+    // mul,
+    // div,
+    // negate: u8,
+    // id: u8,
 
     lparen,
     rparen,
@@ -33,41 +33,26 @@ pub const Token = union(enum) {
         return map.get(key);
     }
 
-    pub fn toString(self: Token) []const u8 {
-        var b: [17]u8 = undefined;
+    pub fn toString(self: Token, writer: anytype) !void {
         switch (self) {
             .num => |n| {
-                return n;
+                try std.fmt.formatInt(n, 10, std.fmt.Case.lower, .{}, writer);
             },
-            .operator => |o| {
+            .operator => |o| try std.fmt.format(writer, "{c}", .{o}),
 
-                // const op = [_]u8{o};
-                // std.debug.print("the OP {c} \n", .{o});
-                _ = std.fmt.bufPrint(&b, "{c} ", .{o}) catch return "Error buffering in Token#toString";
-                return &b;
-            },
-            .lparen => return "(",
-            .rparen => return ")",
-            else => return " Dont Know this ",
+            .lparen => try std.fmt.format(writer, "(", .{}),
+            .rparen => try std.fmt.format(writer, ")", .{}),
+            else => {},
         }
     }
     pub fn arryToString(tokens: []Token) ![]const u8 {
         var list = std.ArrayList(u8).init(std.heap.page_allocator);
         defer list.deinit();
 
-        for (tokens) |token| {
-            switch (token) {
-                .num => |n| {
-                    try list.appendSlice(n);
-                },
-                .operator => |o| {
-                    try list.append(o);
-                },
-                else => {},
-            }
+        for (tokens) |tok| {
+            try tok.toString(list.writer());
             try list.appendSlice(" ");
         }
-
         return try list.toOwnedSlice();
     }
 };
@@ -103,7 +88,7 @@ pub const Lexer = struct {
             \\
         , .{ self.input, self.position, self.input[self.position] });
     }
-    pub fn nextToke(self: *Self) Token {
+    pub fn nextToke(self: *Self) !Token {
         self.skipWhitespace();
         const tok: Token = switch (self.ch) {
             '{' => .lsquirly,
@@ -120,8 +105,18 @@ pub const Lexer = struct {
             //         break :blk .assign;
             //     }
             // },
-            // x + - / ^ for this operator.
-            42, 43, 45, 47, 94 => .{ .operator = self.ch },
+            // x +  / ^ for this operator.
+            42, 43, 47, 94 => .{ .operator = self.ch },
+            // -
+            45 => blk: {
+                if (self.peekIsNum()) {
+                    self.readChar();
+                    const num = try std.fmt.parseInt(i64, self.readNum(), 10);
+                    break :blk .{ .num = -num };
+                } else {
+                    break :blk .{ .operator = self.ch };
+                }
+            },
             0 => .eof,
             'a'...'z', 'A'...'Z' => {
                 const ident = self.readIdentifier();
@@ -132,7 +127,7 @@ pub const Lexer = struct {
             },
             '0'...'9' => {
                 const num = self.readNum();
-                return .{ .num = num };
+                return .{ .num = try std.fmt.parseInt(i64, num, 10) };
             },
             else => {
                 self.illegalTokenError() catch return .{ .illegal = "unable to  Writing illegalTokenError" };
@@ -160,6 +155,9 @@ pub const Lexer = struct {
 
     fn peek(self: *Self, ch: u8) bool {
         return (self.input[self.read_position] == ch) and !(self.read_position >= self.input.len);
+    }
+    fn peekIsNum(self: *Self) bool {
+        return isNum(self.input[self.read_position]);
     }
     fn readChar(self: *Self) void {
         if (self.read_position >= self.input.len) {
