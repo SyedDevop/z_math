@@ -45,6 +45,19 @@ pub const Token = union(enum) {
             else => {},
         }
     }
+    pub fn getCharNum(self: Token) ?i64 {
+        return switch (self) {
+            .num => |n| n,
+            else => null,
+        };
+    }
+    pub fn getCharOprater(self: Token) ?u8 {
+        return switch (self) {
+            .operator => |o| o,
+            else => null,
+        };
+    }
+
     pub fn arryToString(tokens: []Token) ![]const u8 {
         var list = std.ArrayList(u8).init(std.heap.page_allocator);
         defer list.deinit();
@@ -145,7 +158,7 @@ pub const Lexer = struct {
         return self.input[startPos..self.position];
     }
 
-    fn peek(self: *Self, ch: u8) bool {
+    pub fn peek(self: *Self, ch: u8) bool {
         return (self.input[self.read_position] == ch) and !(self.read_position >= self.input.len);
     }
     fn peekIsNum(self: *Self) bool {
