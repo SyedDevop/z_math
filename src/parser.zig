@@ -4,6 +4,10 @@ const lexer = @import("./lexer.zig");
 const Lexer = lexer.Lexer;
 const Token = lexer.Token;
 
+const TokenError = error{
+    NoTokenFound,
+};
+
 pub const Node = struct {
     type: []const u8,
     operator: ?u8,
@@ -19,49 +23,70 @@ pub const AstTree = union(enum) {
 pub const Parser = struct {
     const Self = @This();
     lex: *Lexer,
+    cur: Token,
 
-    pub fn init(lex: *Lexer) Self {
+    fn token(self: Self) Token {
+        return self.cur;
+    }
+    fn nextToken(self: *Self) !void {
+        const tok = try self.lex.nextToke();
+        self.cur = tok;
+    }
+
+    fn isTokenOp(self: Self, ch: u8) bool {
+        return self.cur.isOprater(ch);
+    }
+
+    fn getNumFromToken(self: Self) ?i64 {
+        return switch (self.cur) {
+            .num => |n| n,
+            else => null,
+        };
+    }
+
+    fn hasToken(self: Self) bool {
+        return self.lex.hasTokes();
+    }
+
+    pub fn init(lex: *Lexer) !Self {
+        const lx = lex;
+        const cur = try lx.nextToke();
         return .{
-            .lex = lex,
+            .lex = lx,
+            .cur = cur,
         };
     }
 
     pub fn parse(self: *Self) !AstTree {
-        var tree = AstTree{ .value = 0 };
-        while (self.lex.hasTokes()) {
-            const tok = try self.lex.nextToke();
-            tree = try self.parseExpression(tok);
-            // _ = try self.parseExpression(tok);
-        }
-        return tree;
+        return try self.parseExpression();
     }
 
-    fn parseExpression(self: *Self, tok: Token) !AstTree {
-        var lhs = try self.parseTerm(tok);
-        while (self.lex.hasTokes()) {
-            while (self.lex.peek('-') or self.lex.peek('+')) {
-                const opToken = try self.lex.nextToke();
-                var rhs = try self.parseTerm(try self.lex.nextToke());
-                lhs = AstTree{ .node = &Node{ .type = "BinaryOpration", .operator = opToken.operator, .left = &lhs, .right = &rhs } };
-            }
+    fn parseExpression(self: *Self) !AstTree {
+        var lhs = try self.parseTerm();
+        while (self.isTokenOp('+') or self.isTokenOp('-')) {
+            const pre_op = self.token().operator;
+            try self.nextToken();
+            var rhs = try self.parseTerm();
+            lhs = AstTree{ .node = &Node{ .type = "BinaryOpration", .operator = pre_op, .left = &lhs, .right = &rhs } };
         }
         return lhs;
     }
-    fn parseTerm(self: *Self, tok: Token) !AstTree {
-        var lhs = try self.parseFactor(tok);
-        if (tok.getCharOprater()) |op| {
-            while (op == '/' or op == '*') {
-                var rhs = try self.parseFactor(tok);
-                lhs = AstTree{ .node = &Node{ .type = "BinaryOpration", .operator = op, .left = &lhs, .right = &rhs } };
-            }
+    fn parseTerm(self: *Self) !AstTree {
+        var lhs = try self.parseFactor();
+        while (self.isTokenOp('*') or self.isTokenOp('/')) {
+            const pre_op = self.token().operator;
+            try self.nextToken();
+            var rhs = try self.parseFactor();
+            lhs = AstTree{ .node = &Node{ .type = "BinaryOpration", .operator = pre_op, .left = &lhs, .right = &rhs } };
         }
         return lhs;
     }
-    fn parseFactor(_: *Self, tok: Token) !AstTree {
-        if (tok.getCharNum()) |num| {
-            return .{ .value = num };
+    fn parseFactor(self: *Self) !AstTree {
+        if (self.getNumFromToken()) |num| {
+            try self.nextToken();
+            const literal = AstTree{ .value = num };
+            return literal;
         }
-        std.debug.print("{any}", .{tok});
-        return .{ .value = 0 };
+        return TokenError.NoTokenFound;
     }
 };

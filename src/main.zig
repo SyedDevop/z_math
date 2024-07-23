@@ -19,8 +19,8 @@ pub fn main() !void {
     // const allocator = gpa.allocator();
     // defer _ = gpa.deinit();
 
-    var lex = Lexer.init(" 3 * 2 /  1 - 5  * -2 * 3 ");
-    var par = Parser.init(&lex);
+    var lex = Lexer.init("4 - 5 + 6");
+    var par = try Parser.init(&lex);
     const ast = try par.parse();
     std.debug.print("{any}", .{ast});
 

@@ -57,6 +57,12 @@ pub const Token = union(enum) {
             else => null,
         };
     }
+    pub fn isOprater(self: Token, ch: u8) bool {
+        return switch (self) {
+            .operator => |op| ch == op,
+            else => false,
+        };
+    }
 
     pub fn arryToString(tokens: []Token) ![]const u8 {
         var list = std.ArrayList(u8).init(std.heap.page_allocator);
