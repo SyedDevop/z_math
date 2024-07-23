@@ -15,9 +15,9 @@ pub const Node = struct {
     right: *AstTree,
 };
 
-pub const AstTree = union(enum) {
-    value: i64,
-    node: *const Node,
+pub const AstTree = struct {
+    value: ?i64,
+    node: ?*Node,
 };
 
 pub const Parser = struct {
@@ -67,7 +67,8 @@ pub const Parser = struct {
             const pre_op = self.token().operator;
             try self.nextToken();
             var rhs = try self.parseTerm();
-            lhs = AstTree{ .node = &Node{ .type = "BinaryOpration", .operator = pre_op, .left = &lhs, .right = &rhs } };
+            var nod = Node{ .type = "BinaryOpration", .operator = pre_op, .left = &lhs, .right = &rhs };
+            lhs = AstTree{ .value = null, .node = &nod };
         }
         return lhs;
     }
@@ -77,14 +78,15 @@ pub const Parser = struct {
             const pre_op = self.token().operator;
             try self.nextToken();
             var rhs = try self.parseFactor();
-            lhs = AstTree{ .node = &Node{ .type = "BinaryOpration", .operator = pre_op, .left = &lhs, .right = &rhs } };
+            var nod = Node{ .type = "BinaryOpration", .operator = pre_op, .left = &lhs, .right = &rhs };
+            lhs = AstTree{ .value = null, .node = &nod };
         }
         return lhs;
     }
     fn parseFactor(self: *Self) !AstTree {
         if (self.getNumFromToken()) |num| {
             try self.nextToken();
-            const literal = AstTree{ .value = num };
+            const literal = AstTree{ .value = num, .node = null };
             return literal;
         }
         return TokenError.NoTokenFound;
