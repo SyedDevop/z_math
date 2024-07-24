@@ -2,9 +2,6 @@ const std = @import("std");
 const lexer = @import("./lexer.zig");
 const parser = @import("./parser.zig");
 
-const pretty = @import("pretty");
-const alloc = std.heap.c_allocator;
-
 //Input           :: 3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3
 //Expected        :: 3 4 2 * 1 5 - 2 3 ^ ^ / +
 //Current OutPuth :: 3 4 + 2 1 * 5 2 / 3 - ^ ^
@@ -27,13 +24,12 @@ pub fn main() !void {
     var par = try Parser.init(&lex);
     try par.parse();
 
-    // std.debug.print("{any}\n", .{ast});
     // std.debug.print("\n", .{});
 
-    try pretty.print(alloc, par.tree, .{
-        .max_depth = 0,
-        .struct_max_len = 0,
-    });
+    // try pretty.print(alloc, par.tree, .{
+    //     .max_depth = 0,
+    //     .struct_max_len = 0,
+    // });
     // ast.print();
 
     // var outList = std.ArrayList(Token).init(allocator);
