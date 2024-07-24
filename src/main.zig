@@ -23,13 +23,17 @@ pub fn main() !void {
     // const allocator = gpa.allocator();
     // defer _ = gpa.deinit();
 
-    var lex = Lexer.init("4 - 5 + 6");
+    var lex = Lexer.init("4 - 5 + 10");
     var par = try Parser.init(&lex);
-    const ast = try par.parse();
+    try par.parse();
 
     // std.debug.print("{any}\n", .{ast});
     // std.debug.print("\n", .{});
-    try pretty.print(alloc, ast.node.?.left, .{});
+
+    try pretty.print(alloc, par.tree, .{
+        .max_depth = 0,
+        .struct_max_len = 0,
+    });
     // ast.print();
 
     // var outList = std.ArrayList(Token).init(allocator);

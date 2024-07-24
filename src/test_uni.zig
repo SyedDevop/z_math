@@ -1,24 +1,24 @@
 const std = @import("std");
 
-const NodeType = enum {
+pub const NodeType = enum {
     tip,
     node,
 };
 
-const Tip = struct {
+pub const Tip = struct {
     fn toString(_: Tip, allocator: std.mem.Allocator) []const u8 {
         return allocator.dupe(u8, "Tip") catch unreachable;
     }
 };
 
-const leaf = Tip{};
+pub const leaf = Tip{};
 
-const Node = struct {
+pub const Node = struct {
     left: *const Tree,
     value: u32,
     right: *const Tree,
 
-    fn toString(self: Node, allocator: std.mem.Allocator) []const u8 {
+    pub fn toString(self: Node, allocator: std.mem.Allocator) []const u8 {
         const left = self.left.toString(allocator);
         defer allocator.free(left);
         const right = self.right.toString(allocator);
@@ -28,11 +28,11 @@ const Node = struct {
 };
 
 // etree = Node (Node (Node Tip 1 Tip) 3 (Node Tip 4 Tip)) 5 (Node Tip 7 Tip)
-const Tree = union(NodeType) {
+pub const Tree = union(NodeType) {
     tip: Tip,
     node: *const Node,
 
-    fn toString(self: Tree, allocator: std.mem.Allocator) []const u8 {
+    pub fn toString(self: Tree, allocator: std.mem.Allocator) []const u8 {
         return switch (self) {
             .tip => |t| t.toString(allocator),
             .node => |n| n.toString(allocator),
