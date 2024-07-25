@@ -1,11 +1,11 @@
 const std = @import("std");
 const lexer = @import("./lexer.zig");
+const pretty = @import("pretty");
 
+const Allocator = std.mem.Allocator;
 const Lexer = lexer.Lexer;
 const Token = lexer.Token;
 
-const pretty = @import("pretty");
-const alloc = std.heap.c_allocator;
 const TokenError = error{
     NoTokenFound,
 };
@@ -17,15 +17,16 @@ pub const AstTreeValue = union(enum) {
 
 pub const AstTree = struct {
     value: ?AstTreeValue,
-    left: ?*const AstTree,
-    right: ?*const AstTree,
+    left: ?usize,
+    right: ?usize,
 };
 
 pub const Parser = struct {
     const Self = @This();
     lex: *Lexer,
     cur: Token,
-    tree: *AstTree,
+    ast: std.MultiArrayList(AstTree),
+    alloc: Allocator,
 
     fn token(self: Self) Token {
         return self.cur;
@@ -50,57 +51,64 @@ pub const Parser = struct {
         return self.lex.hasTokes();
     }
 
-    pub fn init(lex: *Lexer) !Self {
+    pub fn init(lex: *Lexer, alloc: Allocator) !Self {
         const lx = lex;
         const cur = try lx.nextToke();
-        var tree = AstTree{ .value = null, .left = null, .right = null };
         return .{
             .lex = lx,
             .cur = cur,
-            .tree = &tree,
+            .ast = std.MultiArrayList(AstTree){},
+            .alloc = alloc,
         };
     }
 
     pub fn parse(self: *Self) !void {
-        const a = try self.parseExpression();
-        try pretty.print(alloc, a, .{
-            .max_depth = 0,
-            .struct_max_len = 0,
-        });
+        _ = try self.parseExpression();
+        for (0..self.ast.len) |i| {
+            std.debug.print("{any}\n", .{self.ast.get(i)});
+        }
     }
 
-    fn parseExpression(self: *Self) !AstTree {
-        var lhs = try self.parseTerm();
+    pub fn deinit(self: *Self) void {
+        self.ast.deinit(self.alloc);
+    }
+    fn parseExpression(self: *Self) !usize {
+        var lhs_idx = try self.parseTerm();
         while (self.isTokenOp('+') or self.isTokenOp('-')) {
             const pre_op = self.token().operator;
             try self.nextToken();
-            const rhs = try self.parseTerm();
-            lhs = AstTree{
+            const rhs_idx = try self.parseTerm();
+            const ast = AstTree{
                 .value = .{ .BinaryOpration = pre_op },
-                .left = &lhs,
-                .right = &rhs,
+                .left = lhs_idx,
+                .right = rhs_idx,
             };
+            lhs_idx = rhs_idx;
+            try self.ast.append(self.alloc, ast);
         }
-        return lhs;
+        return lhs_idx;
     }
-    fn parseTerm(self: *Self) !AstTree {
-        var lhs = try self.parseFactor();
+    fn parseTerm(self: *Self) !usize {
+        var lhs_idx = try self.parseFactor();
         while (self.isTokenOp('*') or self.isTokenOp('/')) {
             const pre_op = self.token().operator;
             try self.nextToken();
-            const rhs = try self.parseFactor();
-            lhs = AstTree{
+            const rhs_idx = try self.parseFactor();
+            const ast = AstTree{
                 .value = .{ .BinaryOpration = pre_op },
-                .left = &lhs,
-                .right = &rhs,
+                .left = lhs_idx,
+                .right = rhs_idx,
             };
+            lhs_idx = rhs_idx;
+            try self.ast.append(self.alloc, ast);
         }
-        return lhs;
+        return lhs_idx;
     }
-    fn parseFactor(self: *Self) !AstTree {
+    fn parseFactor(self: *Self) !usize {
         if (self.getNumFromToken()) |num| {
             try self.nextToken();
-            return AstTree{ .value = .{ .Integer = num }, .left = null, .right = null };
+            try self.ast.append(self.alloc, AstTree{ .value = .{ .Integer = num }, .left = null, .right = null });
+            return self.ast.len - 1;
         }
         return TokenError.NoTokenFound;
     }

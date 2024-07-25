@@ -2,7 +2,7 @@ const std = @import("std");
 const lexer = @import("./lexer.zig");
 const parser = @import("./parser.zig");
 
-//Input           :: 3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3
+//Input           :: 3 + 4 * 2 /  1 - 5  ^ 2 ^ 3
 //Expected        :: 3 4 2 * 1 5 - 2 3 ^ ^ / +
 //Current OutPuth :: 3 4 + 2 1 * 5 2 / 3 - ^ ^
 
@@ -16,12 +16,13 @@ const Token = lexer.Token;
 const Parser = parser.Parser;
 
 pub fn main() !void {
-    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    // const allocator = gpa.allocator();
-    // defer _ = gpa.deinit();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
 
-    var lex = Lexer.init("4 - 5 + 10");
-    var par = try Parser.init(&lex);
+    var lex = Lexer.init("3 + 4 * 2 /  1 - 5 * 2 * 3");
+    var par = try Parser.init(&lex, allocator);
+    defer par.deinit();
     try par.parse();
 
     // std.debug.print("\n", .{});
