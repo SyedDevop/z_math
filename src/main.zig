@@ -20,7 +20,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var lex = Lexer.init("3 + 4 * 2 /  1 - 5 * 2 * 3");
+    var lex = Lexer.init("3 + 4 * 2 + 10 * 40 + 5");
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
     try par.parse();

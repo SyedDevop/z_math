@@ -81,7 +81,7 @@ pub const Parser = struct {
             const ast = AstTree{
                 .value = .{ .BinaryOpration = pre_op },
                 .left = lhs_idx,
-                .right = rhs_idx,
+                .right = self.ast.len - 1,
             };
             lhs_idx = rhs_idx;
             try self.ast.append(self.alloc, ast);
@@ -97,7 +97,7 @@ pub const Parser = struct {
             const ast = AstTree{
                 .value = .{ .BinaryOpration = pre_op },
                 .left = lhs_idx,
-                .right = rhs_idx,
+                .right = self.ast.len - 1,
             };
             lhs_idx = rhs_idx;
             try self.ast.append(self.alloc, ast);
@@ -105,11 +105,13 @@ pub const Parser = struct {
         return lhs_idx;
     }
     fn parseFactor(self: *Self) !usize {
-        if (self.getNumFromToken()) |num| {
-            try self.nextToken();
-            try self.ast.append(self.alloc, AstTree{ .value = .{ .Integer = num }, .left = null, .right = null });
-            return self.ast.len - 1;
-        }
-        return TokenError.NoTokenFound;
+        return switch (self.token()) {
+            .num => |num| {
+                try self.nextToken();
+                try self.ast.append(self.alloc, AstTree{ .value = .{ .Integer = num }, .left = null, .right = null });
+                return self.ast.len - 1;
+            },
+            else => TokenError.NoTokenFound,
+        };
     }
 };
