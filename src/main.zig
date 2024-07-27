@@ -20,11 +20,63 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var lex = Lexer.init("3 + 4 * 2 + 10 * 40 + 5");
+    var lex = Lexer.init("3 + 4 * 2 + 10 * 40 + 5 * 70");
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
     try par.parse();
 
+    var result = std.AutoHashMap(usize, i64).init(allocator);
+    defer result.deinit();
+
+    var final: usize = 0;
+    for (0..par.ast.len) |i| {
+        const cur_node = par.ast.get(i);
+        switch (cur_node.value) {
+            .BinaryOpration => |op| {
+                var lhs_val: i64 = 0;
+                var rhs_val: i64 = 0;
+                if (cur_node.left) |lhs| {
+                    switch (par.ast.get(lhs).value) {
+                        .BinaryOpration => {
+                            if (result.get(i)) |v| {
+                                lhs_val = v;
+                            }
+                        },
+                        .Integer => |n| lhs_val = n,
+                    }
+                }
+                if (cur_node.right) |rhs| {
+                    switch (par.ast.get(rhs).value) {
+                        .BinaryOpration => {
+                            if (result.get(i)) |v| {
+                                rhs_val = v;
+                            }
+                        },
+                        .Integer => |n| rhs_val = n,
+                    }
+                }
+
+                std.debug.print("The cur op{c} lhs {d} rhs {d}\n", .{ op, lhs_val, rhs_val });
+                const res = switch (op) {
+                    '+' => lhs_val + rhs_val,
+                    '-' => lhs_val - rhs_val,
+                    // '/' => {
+                    //     std.debug.print("lhs {d} rhs{d} ", .{ lhs_val, rhs_val });
+                    //     return @divExact(lhs_val, rhs_val);
+                    // },
+                    '*' => lhs_val * rhs_val,
+                    else => 0,
+                };
+                try result.put(i, res);
+                final = i;
+            },
+            else => {},
+        }
+    }
+    var it = result.iterator();
+    while (it.next()) |val| {
+        std.debug.print("key {d} val {d}\n", .{ val.key_ptr.*, val.value_ptr.* });
+    }
     // std.debug.print("\n", .{});
 
     // try pretty.print(alloc, par.tree, .{

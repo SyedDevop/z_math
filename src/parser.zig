@@ -16,7 +16,7 @@ pub const AstTreeValue = union(enum) {
 };
 
 pub const AstTree = struct {
-    value: ?AstTreeValue,
+    value: AstTreeValue,
     left: ?usize,
     right: ?usize,
 };
@@ -64,9 +64,6 @@ pub const Parser = struct {
 
     pub fn parse(self: *Self) !void {
         _ = try self.parseExpression();
-        for (0..self.ast.len) |i| {
-            std.debug.print("{any}\n", .{self.ast.get(i)});
-        }
     }
 
     pub fn deinit(self: *Self) void {
@@ -81,9 +78,9 @@ pub const Parser = struct {
             const ast = AstTree{
                 .value = .{ .BinaryOpration = pre_op },
                 .left = lhs_idx,
-                .right = self.ast.len - 1,
+                .right = rhs_idx,
             };
-            lhs_idx = rhs_idx;
+            lhs_idx = self.ast.len;
             try self.ast.append(self.alloc, ast);
         }
         return lhs_idx;
@@ -97,9 +94,9 @@ pub const Parser = struct {
             const ast = AstTree{
                 .value = .{ .BinaryOpration = pre_op },
                 .left = lhs_idx,
-                .right = self.ast.len - 1,
+                .right = rhs_idx,
             };
-            lhs_idx = rhs_idx;
+            lhs_idx = self.ast.len;
             try self.ast.append(self.alloc, ast);
         }
         return lhs_idx;
