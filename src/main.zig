@@ -59,10 +59,7 @@ pub fn main() !void {
                 const res = switch (op) {
                     '+' => lhs_val + rhs_val,
                     '-' => lhs_val - rhs_val,
-                    // '/' => {
-                    //     std.debug.print("lhs {d} rhs{d} ", .{ lhs_val, rhs_val });
-                    //     return @divExact(lhs_val, rhs_val);
-                    // },
+                    '/' => @divTrunc(lhs_val, rhs_val),
                     '*' => lhs_val * rhs_val,
                     else => 0,
                 };
