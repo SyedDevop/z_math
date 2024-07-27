@@ -20,7 +20,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var lex = Lexer.init("3 + 4 * 2 + 10 * 40 + 5 * 70");
+    var lex = Lexer.init("3 + 4 * 680+ 98* 5665 - 454165 * 8787 ");
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
     try par.parse();
@@ -38,7 +38,7 @@ pub fn main() !void {
                 if (cur_node.left) |lhs| {
                     switch (par.ast.get(lhs).value) {
                         .BinaryOpration => {
-                            if (result.get(i)) |v| {
+                            if (result.get(lhs)) |v| {
                                 lhs_val = v;
                             }
                         },
@@ -48,7 +48,7 @@ pub fn main() !void {
                 if (cur_node.right) |rhs| {
                     switch (par.ast.get(rhs).value) {
                         .BinaryOpration => {
-                            if (result.get(i)) |v| {
+                            if (result.get(rhs)) |v| {
                                 rhs_val = v;
                             }
                         },
@@ -56,7 +56,6 @@ pub fn main() !void {
                     }
                 }
 
-                std.debug.print("The cur op{c} lhs {d} rhs {d}\n", .{ op, lhs_val, rhs_val });
                 const res = switch (op) {
                     '+' => lhs_val + rhs_val,
                     '-' => lhs_val - rhs_val,
@@ -67,17 +66,14 @@ pub fn main() !void {
                     '*' => lhs_val * rhs_val,
                     else => 0,
                 };
+
                 try result.put(i, res);
                 final = i;
             },
             else => {},
         }
     }
-    var it = result.iterator();
-    while (it.next()) |val| {
-        std.debug.print("key {d} val {d}\n", .{ val.key_ptr.*, val.value_ptr.* });
-    }
-    // std.debug.print("\n", .{});
+    std.debug.print("Ans: {any}\n", .{result.get(final)});
 
     // try pretty.print(alloc, par.tree, .{
     //     .max_depth = 0,
