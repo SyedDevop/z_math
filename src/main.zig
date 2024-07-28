@@ -9,12 +9,29 @@ const Token = lexer.Token;
 const Parser = parser.Parser;
 const Eval = evalStruct.Eval;
 
+fn stringArg(alloc: std.mem.Allocator) ![]u8 {
+    var args = try std.process.argsWithAllocator(alloc);
+    defer args.deinit();
+    _ = args.skip();
+
+    var argList = std.ArrayList(u8).init(alloc);
+    defer argList.deinit();
+
+    while (args.next()) |arg| {
+        try argList.appendSlice(arg);
+        try argList.append(' ');
+    }
+    return try argList.toOwnedSlice();
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var lex = Lexer.init("3 + 4 * 680+ 98* 5665 - 454165 * 8787 ");
+    const input = try stringArg(allocator);
+    defer allocator.free(input);
+    var lex = Lexer.init(input);
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
     try par.parse();
