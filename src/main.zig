@@ -31,6 +31,7 @@ pub fn main() !void {
 
     const input = try stringArg(allocator);
     defer allocator.free(input);
+    print("The input is :: {s} ::\n", .{input});
     var lex = Lexer.init(input);
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
