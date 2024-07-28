@@ -25,7 +25,7 @@ pub fn main() !void {
     defer par.deinit();
     try par.parse();
 
-    var result = std.AutoHashMap(usize, i64).init(allocator);
+    var result = std.AutoHashMap(usize, f64).init(allocator);
     defer result.deinit();
 
     var final: usize = 0;
@@ -33,8 +33,8 @@ pub fn main() !void {
         const cur_node = par.ast.get(i);
         switch (cur_node.value) {
             .BinaryOpration => |op| {
-                var lhs_val: i64 = 0;
-                var rhs_val: i64 = 0;
+                var lhs_val: f64 = 0;
+                var rhs_val: f64 = 0;
                 if (cur_node.left) |lhs| {
                     switch (par.ast.get(lhs).value) {
                         .BinaryOpration => {
@@ -59,7 +59,7 @@ pub fn main() !void {
                 const res = switch (op) {
                     '+' => lhs_val + rhs_val,
                     '-' => lhs_val - rhs_val,
-                    '/' => @divTrunc(lhs_val, rhs_val),
+                    '/' => lhs_val / rhs_val,
                     '*' => lhs_val * rhs_val,
                     else => 0,
                 };
@@ -70,7 +70,8 @@ pub fn main() !void {
             else => {},
         }
     }
-    std.debug.print("Ans: {any}\n", .{result.get(final)});
+
+    std.debug.print("Ans: {d}\n", .{result.get(final).?});
 
     // try pretty.print(alloc, par.tree, .{
     //     .max_depth = 0,

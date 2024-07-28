@@ -1,6 +1,6 @@
 const std = @import("std");
 pub const Token = union(enum) {
-    num: i64,
+    num: f64,
     operator: u8,
     function: []const u8,
     illegal: []const u8,
@@ -45,7 +45,7 @@ pub const Token = union(enum) {
             else => {},
         }
     }
-    pub fn getCharNum(self: Token) ?i64 {
+    pub fn getCharNum(self: Token) ?f64 {
         return switch (self) {
             .num => |n| n,
             else => null,
@@ -122,7 +122,7 @@ pub const Lexer = struct {
             45 => blk: {
                 if (self.peekIsNum()) {
                     self.readChar();
-                    const num = try std.fmt.parseInt(i64, self.readNum(), 10);
+                    const num = try std.fmt.parseFloat(f64, self.readNum());
                     break :blk .{ .num = -num };
                 } else {
                     break :blk .{ .operator = self.ch };
@@ -138,7 +138,7 @@ pub const Lexer = struct {
             },
             '0'...'9' => {
                 const num = self.readNum();
-                return .{ .num = try std.fmt.parseInt(i64, num, 10) };
+                return .{ .num = try std.fmt.parseFloat(f64, num) };
             },
             else => {
                 self.illegalTokenError() catch return .{ .illegal = "unable to  Writing illegalTokenError" };

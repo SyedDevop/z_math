@@ -12,7 +12,7 @@ const TokenError = error{
 
 pub const AstTreeValue = union(enum) {
     BinaryOpration: u8,
-    Integer: i64,
+    Integer: f64,
 };
 
 pub const AstTree = struct {
@@ -40,7 +40,7 @@ pub const Parser = struct {
         return self.cur.isOprater(ch);
     }
 
-    fn getNumFromToken(self: Self) ?i64 {
+    fn getNumFromToken(self: Self) ?f64 {
         return switch (self.cur) {
             .num => |n| n,
             else => null,
