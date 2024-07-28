@@ -43,6 +43,13 @@ pub const Parser = struct {
         return self.lex.hasTokes();
     }
 
+    fn isTerm(self: Self) bool {
+        return self.isTokenOp('*') or
+            self.isTokenOp('/') or
+            self.isTokenOp('^') or
+            self.isTokenOp('%') or
+            self.isTokenOp('m');
+    }
     pub fn init(lex: *Lexer, alloc: Allocator) !Self {
         const lx = lex;
         const cur = try lx.nextToke();
@@ -79,7 +86,7 @@ pub const Parser = struct {
     }
     fn parseTerm(self: *Self) !usize {
         var lhs_idx = try self.parseFactor();
-        while (self.isTokenOp('*') or self.isTokenOp('/')) {
+        while (self.isTerm()) {
             const pre_op = self.token().operator;
             try self.nextToken();
             const rhs_idx = try self.parseFactor();

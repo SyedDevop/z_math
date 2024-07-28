@@ -54,6 +54,9 @@ pub const Eval = struct {
             '-' => lhs_val - rhs_val,
             '/' => lhs_val / rhs_val,
             '*' => lhs_val * rhs_val,
+            '^' => std.math.pow(f64, lhs_val, rhs_val),
+            'm' => @mod(lhs_val, rhs_val),
+            '%' => lhs_val * rhs_val / 100,
             else => 0,
         };
     }

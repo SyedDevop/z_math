@@ -116,6 +116,14 @@ pub const Lexer = struct {
             ')' => .rparen,
             '<' => .less_than,
             '>' => .greater_than,
+            '%' => blk: {
+                if (self.peek('%')) {
+                    self.readChar();
+                    break :blk .{ .operator = 'm' };
+                } else {
+                    break :blk .{ .operator = self.ch };
+                }
+            },
             // x +  / ^ for this operator.
             42, 43, 47, 94 => .{ .operator = self.ch },
             // -
