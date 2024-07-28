@@ -35,7 +35,7 @@ pub fn main() !void {
     var lex = Lexer.init(input);
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
-    try par.parse();
+    par.parse();
 
     var result = std.AutoHashMap(usize, f64).init(allocator);
     defer result.deinit();

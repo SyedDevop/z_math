@@ -23,9 +23,17 @@ pub const Parser = struct {
     fn token(self: Self) Token {
         return self.cur;
     }
-    fn nextToken(self: *Self) !void {
-        const tok = try self.lex.nextToke();
+    fn nextToken(self: *Self) void {
+        const tok = self.lex.nextToke() catch |err| {
+            std.debug.panic("Unable to get the next Toke.\n(err):: {any}", .{err});
+        };
         self.cur = tok;
+    }
+
+    fn appendAst(self: *Self, ast: AstTree) void {
+        self.ast.append(self.alloc, ast) catch |err| {
+            std.debug.panic("Unable To add AstTree to map. \nTree:: {any} .\n(err):: {any}", .{ ast, err });
+        };
     }
 
     fn isTokenOp(self: Self, ch: u8) bool {
@@ -61,53 +69,61 @@ pub const Parser = struct {
         };
     }
 
-    pub fn parse(self: *Self) !void {
-        _ = try self.parseExpression();
+    pub fn parse(self: *Self) void {
+        _ = self.parseExpression();
     }
 
     pub fn deinit(self: *Self) void {
         self.ast.deinit(self.alloc);
     }
-    fn parseExpression(self: *Self) !usize {
-        var lhs_idx = try self.parseTerm();
+    fn parseExpression(self: *Self) usize {
+        var lhs_idx = self.parseTerm();
         while (self.isTokenOp('+') or self.isTokenOp('-')) {
             const pre_op = self.token().operator;
-            try self.nextToken();
-            const rhs_idx = try self.parseTerm();
+            self.nextToken();
+            const rhs_idx = self.parseTerm();
             const ast = AstTree{
                 .value = .{ .BinaryOpration = pre_op },
                 .left = lhs_idx,
                 .right = rhs_idx,
             };
             lhs_idx = self.ast.len;
-            try self.ast.append(self.alloc, ast);
+            self.appendAst(ast);
         }
         return lhs_idx;
     }
-    fn parseTerm(self: *Self) !usize {
-        var lhs_idx = try self.parseFactor();
+    fn parseTerm(self: *Self) usize {
+        var lhs_idx = self.parseFactor();
         while (self.isTerm()) {
             const pre_op = self.token().operator;
-            try self.nextToken();
-            const rhs_idx = try self.parseFactor();
+            self.nextToken();
+            const rhs_idx = self.parseFactor();
             const ast = AstTree{
                 .value = .{ .BinaryOpration = pre_op },
                 .left = lhs_idx,
                 .right = rhs_idx,
             };
             lhs_idx = self.ast.len;
-            try self.ast.append(self.alloc, ast);
+            self.appendAst(ast);
         }
         return lhs_idx;
     }
-    fn parseFactor(self: *Self) !usize {
+    fn parseFactor(self: *Self) usize {
         return switch (self.token()) {
             .num => |num| {
-                try self.nextToken();
-                try self.ast.append(self.alloc, AstTree{ .value = .{ .Integer = num }, .left = null, .right = null });
+                self.nextToken();
+                self.appendAst(AstTree{ .value = .{ .Integer = num }, .left = null, .right = null });
                 return self.ast.len - 1;
             },
-            else => TokenError.NoTokenFound,
+            .lparen => {
+                self.nextToken();
+                const expr = self.parseExpression();
+                self.nextToken();
+                return expr;
+            },
+            else => {
+                std.debug.panic("Illegal Tonken:: {any}", .{self.token()});
+            },
         };
     }
 };
