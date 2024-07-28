@@ -1,31 +1,23 @@
 const std = @import("std");
 const lexer = @import("./lexer.zig");
 const pretty = @import("pretty");
+const astStruct = @import("./ast.zig");
 
 const Allocator = std.mem.Allocator;
 const Lexer = lexer.Lexer;
 const Token = lexer.Token;
+const AstTree = astStruct.AstTree;
+const AstListType = astStruct.AstListType;
 
 const TokenError = error{
     NoTokenFound,
-};
-
-pub const AstTreeValue = union(enum) {
-    BinaryOpration: u8,
-    Integer: f64,
-};
-
-pub const AstTree = struct {
-    value: AstTreeValue,
-    left: ?usize,
-    right: ?usize,
 };
 
 pub const Parser = struct {
     const Self = @This();
     lex: *Lexer,
     cur: Token,
-    ast: std.MultiArrayList(AstTree),
+    ast: AstListType,
     alloc: Allocator,
 
     fn token(self: Self) Token {
@@ -57,7 +49,7 @@ pub const Parser = struct {
         return .{
             .lex = lx,
             .cur = cur,
-            .ast = std.MultiArrayList(AstTree){},
+            .ast = AstListType{},
             .alloc = alloc,
         };
     }
