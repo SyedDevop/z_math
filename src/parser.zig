@@ -3,9 +3,9 @@ const lexer = @import("./lexer.zig");
 const pretty = @import("pretty");
 const astStruct = @import("./ast.zig");
 
+const Token = @import("./token.zig").Token;
 const Allocator = std.mem.Allocator;
 const Lexer = lexer.Lexer;
-const Token = lexer.Token;
 const AstTree = astStruct.AstTree;
 const AstListType = astStruct.AstListType;
 

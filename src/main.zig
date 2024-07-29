@@ -3,9 +3,9 @@ const lexer = @import("./lexer.zig");
 const parser = @import("./parser.zig");
 const evalStruct = @import("eval.zig");
 
+const Token = @import("./token.zig").Token;
 const print = std.debug.print;
 const Lexer = lexer.Lexer;
-const Token = lexer.Token;
 const Parser = parser.Parser;
 const Eval = evalStruct.Eval;
 
@@ -32,7 +32,7 @@ pub fn main() !void {
     const input = try stringArg(allocator);
     defer allocator.free(input);
     print("The input is :: {s} ::\n", .{input});
-    var lex = Lexer.init(input);
+    var lex = Lexer.init(input, allocator);
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
     par.parse();
