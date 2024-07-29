@@ -121,6 +121,10 @@ pub const Parser = struct {
                 self.nextToken();
                 return expr;
             },
+            .eof => {
+                std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m", .{});
+                std.process.exit(1);
+            },
             else => {
                 std.debug.panic("Illegal Tonken:: {any}", .{self.token()});
             },

@@ -31,11 +31,16 @@ pub fn main() !void {
 
     const input = try stringArg(allocator);
     defer allocator.free(input);
-    print("The input is :: {s} ::\n", .{input});
+    print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
     var lex = Lexer.init(input, allocator);
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
     par.parse();
+
+    if (par.ast.len < 3) {
+        std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m", .{});
+        return;
+    }
 
     var result = std.AutoHashMap(usize, f64).init(allocator);
     defer result.deinit();
