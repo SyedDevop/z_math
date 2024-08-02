@@ -3,7 +3,11 @@ pub const Token = union(enum) {
     num: f64,
     operator: u8,
     function: []const u8,
-    illegal: []const u8,
+
+    illegal: struct {
+        st_pos: usize,
+        en_pos: usize,
+    },
 
     // add,
     // sub,
