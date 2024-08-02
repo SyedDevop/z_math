@@ -64,9 +64,6 @@ pub fn main() !void {
         return;
     }
 
-    var result = std.AutoHashMap(usize, f64).init(allocator);
-    defer result.deinit();
-
     var eval = Eval.init(&par.ast, allocator);
     defer eval.deinit();
 
