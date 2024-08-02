@@ -35,7 +35,7 @@ pub fn main() !void {
     var lex = Lexer.init(input, allocator);
     var par = try Parser.init(&lex, allocator);
     defer par.deinit();
-    par.parse();
+    try par.parse();
 
     if (par.ast.len < 3) {
         std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m", .{});

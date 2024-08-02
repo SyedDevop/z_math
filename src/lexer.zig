@@ -29,7 +29,7 @@ pub const Lexer = struct {
         lex.readChar();
         return lex;
     }
-    pub fn nextToke(self: *Self) !Token {
+    pub fn nextToke(self: *Self) std.fmt.ParseFloatError!Token {
         self.skipWhitespace();
         const tok: Token = switch (self.ch) {
             '{' => .lsquirly,

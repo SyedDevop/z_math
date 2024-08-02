@@ -1,14 +1,14 @@
 const std = @import("std");
 
-pub const AstListType = std.MultiArrayList(AstTree);
+pub const NodeList = std.MultiArrayList(Node);
 
-pub const AstTreeValue = union(enum) {
+pub const Value = union(enum) {
     BinaryOpration: u8,
     Integer: f64,
 };
 
-pub const AstTree = struct {
-    value: AstTreeValue,
+pub const Node = struct {
+    value: Value,
     left: ?usize,
     right: ?usize,
 };
