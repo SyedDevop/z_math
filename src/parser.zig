@@ -146,7 +146,7 @@ pub const Parser = struct {
                 defer s.deinit();
 
                 // 16 is the prefix for the input print at start.
-                for (il.st_pos + 16) |_| {
+                for (il.st_pos + 9) |_| {
                     try s.append(' ');
                 }
 
