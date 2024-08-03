@@ -23,11 +23,6 @@ fn stringArg(alloc: std.mem.Allocator) ![]const u8 {
     }
     return try argList.toOwnedSlice();
 }
-// .eof => {
-//     std.debug.print("EOF", .{});
-//     try self.errors.append(self.alloc, .{ .message = "Waring: The expression provided is too short. Please provide a longer or more detailed expression", .level = .waring });
-//     return 0;
-// },
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
