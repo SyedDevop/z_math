@@ -35,9 +35,9 @@ pub fn main() !void {
 
     const input = try stringArg(allocator);
     defer allocator.free(input);
-    print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
 
     if (input.len <= 1) {
+        print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
         std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m\n", .{});
         return;
     }
@@ -50,6 +50,7 @@ pub fn main() !void {
     if (par.errors.items.len > 0) {
         for (par.errors.items) |err| {
             if (err.level == .err) {
+                print("The input is :: {s} ::\n\x1b[0m", .{input});
                 std.debug.print("\x1b[31mError: {s}\x1b[0m\n", .{err.message});
             } else {
                 std.debug.print("\x1b[33mWaring: {s}\x1b[0m\n", .{err.message});
@@ -67,6 +68,7 @@ pub fn main() !void {
     var eval = Eval.init(&par.ast, allocator);
     defer eval.deinit();
 
+    print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
     print("Ans: {d}\n", .{try eval.eval()});
 }
 
