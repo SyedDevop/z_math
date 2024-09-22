@@ -29,7 +29,7 @@ pub const Lexer = struct {
         lex.readChar();
         return lex;
     }
-    pub fn nextToke(self: *Self) !Token {
+    pub fn nextToke(self: *Self) std.fmt.ParseFloatError!Token {
         self.skipWhitespace();
         const tok: Token = switch (self.ch) {
             '{' => .lsquirly,
@@ -59,20 +59,28 @@ pub const Lexer = struct {
                 }
             },
             0 => .eof,
-            'a'...'z', 'A'...'Z' => {
+            'a'...'z', 'A'...'Z' => blk: {
+                const cur_pos = self.position;
                 const ident = self.readIdentifier();
                 if (Token.keyword(ident)) |token| {
                     return token;
                 }
-                return .{ .illegal = "Idont know" };
+                break :blk .{
+                    .illegal = .{
+                        .st_pos = cur_pos,
+                        .en_pos = self.position,
+                    },
+                };
             },
             '0'...'9' => {
                 const num = self.readNum();
                 return .{ .num = try std.fmt.parseFloat(f64, num) };
             },
-            else => {
-                try self.illegalTokenError();
-                return .{ .illegal = "I don't Know " };
+            else => .{
+                .illegal = .{
+                    .st_pos = self.position,
+                    .en_pos = self.position,
+                },
             },
         };
 
@@ -88,13 +96,6 @@ pub const Lexer = struct {
 
         self.position = self.read_position;
         self.read_position += 1;
-    }
-    fn illegalTokenError(self: *Self) !void {
-        for (self.position + 16) |_| {
-            std.debug.print(" ", .{});
-        }
-        std.debug.print("\x1b[0;31m^ Found illegal character\x1b[0m", .{});
-        std.process.exit(1);
     }
     fn readIdentifier(self: *Self) []const u8 {
         const position = self.position;

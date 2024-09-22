@@ -1,12 +1,9 @@
 const std = @import("std");
 const parser = @import("./parser.zig");
-const astStruct = @import("./ast.zig");
+const Ast = @import("./ast.zig");
 
 const AutoHashMap = std.AutoHashMap;
-const MultiArrayList = std.MultiArrayList;
 const Allocator = std.mem.Allocator;
-const AstTree = astStruct.AstTree;
-const AstListType = astStruct.AstListType;
 
 pub const MapType = AutoHashMap(usize, f64);
 
@@ -14,10 +11,10 @@ pub const Eval = struct {
     const Self = @This();
     alloc: Allocator,
     map: MapType,
-    ast: *MultiArrayList(AstTree),
+    ast: *Ast.NodeList,
     final: usize,
 
-    pub fn init(ast: *MultiArrayList(AstTree), alloc: Allocator) Self {
+    pub fn init(ast: *Ast.NodeList, alloc: Allocator) Self {
         return .{
             .alloc = alloc,
             .map = MapType.init(alloc),
@@ -35,13 +32,13 @@ pub const Eval = struct {
         };
         return num;
     }
-    fn leftVal(self: *Self, cur_node: *const AstTree) f64 {
+    fn leftVal(self: *Self, cur_node: *const Ast.Node) f64 {
         if (cur_node.left) |lhs| {
             return self.nodeValue(lhs);
         }
         return 0;
     }
-    fn rightVal(self: *Self, cur_node: *const AstTree) f64 {
+    fn rightVal(self: *Self, cur_node: *const Ast.Node) f64 {
         if (cur_node.right) |rhs| {
             return self.nodeValue(rhs);
         }

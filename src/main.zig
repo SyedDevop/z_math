@@ -9,7 +9,7 @@ const Lexer = lexer.Lexer;
 const Parser = parser.Parser;
 const Eval = evalStruct.Eval;
 
-fn stringArg(alloc: std.mem.Allocator) ![]u8 {
+fn stringArg(alloc: std.mem.Allocator) ![]const u8 {
     var args = try std.process.argsWithAllocator(alloc);
     defer args.deinit();
     _ = args.skip();
@@ -18,12 +18,11 @@ fn stringArg(alloc: std.mem.Allocator) ![]u8 {
     defer argList.deinit();
 
     while (args.next()) |arg| {
-        try argList.appendSlice(arg);
+        try argList.appendSlice(std.mem.trim(u8, arg, " "));
         try argList.append(' ');
     }
     return try argList.toOwnedSlice();
 }
-
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -31,23 +30,40 @@ pub fn main() !void {
 
     const input = try stringArg(allocator);
     defer allocator.free(input);
-    print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
-    var lex = Lexer.init(input, allocator);
-    var par = try Parser.init(&lex, allocator);
-    defer par.deinit();
-    par.parse();
 
-    if (par.ast.len < 3) {
-        std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m", .{});
+    if (input.len <= 1) {
+        print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
+        std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m\n", .{});
         return;
     }
 
-    var result = std.AutoHashMap(usize, f64).init(allocator);
-    defer result.deinit();
+    var lex = Lexer.init(input, allocator);
+    var par = try Parser.init(input, &lex, allocator);
+    defer par.deinit();
+    try par.parse();
+
+    if (par.errors.items.len > 0) {
+        for (par.errors.items) |err| {
+            if (err.level == .err) {
+                print("The input is :: {s} ::\n\x1b[0m", .{input});
+                std.debug.print("\x1b[31mError: {s}\x1b[0m\n", .{err.message});
+            } else {
+                std.debug.print("\x1b[33mWaring: {s}\x1b[0m\n", .{err.message});
+            }
+            if (err.token) |tok| {
+                std.debug.print("\x1b[33mToke:: {any}\x1b[0m\n", .{tok});
+            }
+            if (err.message_alloced) {
+                allocator.free(err.message);
+            }
+        }
+        return;
+    }
 
     var eval = Eval.init(&par.ast, allocator);
     defer eval.deinit();
 
+    print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
     print("Ans: {d}\n", .{try eval.eval()});
 }
 
