@@ -44,12 +44,6 @@ const cmdList: []const Cmd = &.{
                 .info = "Start interactive mode to evaluate expressions based on previous results.",
                 .type = .bool,
             },
-            .{
-                .long = "all",
-                .short = 'a',
-                .info = "Start interactive mode to evaluate expressions based on previous results.",
-                .type = .bool,
-            },
         },
     },
     .{
@@ -83,8 +77,9 @@ pub const Cli = struct {
 
     cmdsOptions: []const Cmd,
     cmd: ?Cmd = null,
+    version: []const u8,
 
-    pub fn init(allocate: Allocator, name: []const u8, description: ?[]const u8) Self {
+    pub fn init(allocate: Allocator, name: []const u8, description: ?[]const u8, version: []const u8) Self {
         const args = try std.process.argsWithAllocator(allocate);
         return .{
             .alloc = allocate,
@@ -92,49 +87,52 @@ pub const Cli = struct {
             .name = name,
             .description = description,
             .cmdsOptions = cmdList,
+            .version = version,
         };
     }
     pub fn parse(self: *Self) !void {
         errdefer self.args.deinit();
     }
-    pub fn help(self: Self) void {
+    pub fn help(self: Self) !void {
         const padding = 20;
+        const stdout = std.io.getStdOut().writer();
         if (self.description) |dis| {
-            std.debug.print("{s}\n\n", .{dis});
+            try stdout.print("Z Math {s}\n{s}\n\n", .{ self.version, dis });
         }
         const cmd_opt = self.cmdsOptions[0];
-        std.debug.print("USAGE: \n", .{});
-        std.debug.print("  {s}\n\n", .{cmd_opt.usage});
-        std.debug.print("OPTIONS: \n", .{});
+        try stdout.print("USAGE: \n", .{});
+        try stdout.print("  {s}\n\n", .{cmd_opt.usage});
+        try stdout.print("OPTIONS: \n", .{});
         if (cmd_opt.options) |opt| {
             for (opt) |value| {
                 var opt_len: usize = 0;
                 if (value.short) |s| {
                     opt_len += 4;
-                    std.debug.print(" -{c},", .{s});
+                    try stdout.print(" -{c},", .{s});
                 }
                 if (value.long) |l| {
                     opt_len += (l.len + 2);
-                    std.debug.print(" --{s}", .{l});
+                    try stdout.print(" --{s}", .{l});
                 }
                 for (0..(padding - opt_len)) |_| {
-                    std.debug.print(" ", .{});
+                    try stdout.print(" ", .{});
                 }
-                std.debug.print("{s}\n", .{value.info});
+                try stdout.print("{s}\n", .{value.info});
             }
         }
-        std.debug.print(" -h, --help          Help message.\n", .{});
-        std.debug.print("\n", .{});
+        try stdout.print(" -h, --help          Help message.\n", .{});
+        try stdout.print(" -v, --version       App version.\n", .{});
+        try stdout.print("\n", .{});
         if (cmd_opt.name != .root) return;
-        std.debug.print("COMMANDS: \n", .{});
+        try stdout.print("COMMANDS: \n", .{});
         for (self.cmdsOptions) |value| {
             if (value.info) |info| {
                 const name = @tagName(value.name);
-                std.debug.print(" {s}", .{name});
+                try stdout.print(" {s}", .{name});
                 for (0..(padding - name.len)) |_| {
-                    std.debug.print(" ", .{});
+                    try stdout.print(" ", .{});
                 }
-                std.debug.print("{s}\n", .{info});
+                try stdout.print("{s}\n", .{info});
             }
         }
     }
@@ -153,8 +151,8 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var cli = Cli.init(allocator, "Z Math", usage);
+    var cli = Cli.init(allocator, "Z Math", usage, "0.1.0");
     defer cli.deinit();
-    cli.help();
+    try cli.help();
     // std.debug.print("{any}", .{cli.cmdsOptions});
 }
