@@ -97,21 +97,21 @@ pub const Cli = struct {
     pub fn parse(self: *Self) !void {
         errdefer self.args.deinit();
     }
-    pub fn help(self: Self) !void {
+    pub fn help(self: Self) void {
         const padding = 20;
         if (self.description) |dis| {
             std.debug.print("{s}\n\n", .{dis});
         }
-
+        const cmd_opt = self.cmdsOptions[0];
         std.debug.print("USAGE: \n", .{});
-        std.debug.print("  {s}\n\n", .{self.cmdsOptions[0].usage});
-        std.debug.print("OPTIONS: \n\n", .{});
-        if (self.cmdsOptions[0].options) |opt| {
+        std.debug.print("  {s}\n\n", .{cmd_opt.usage});
+        std.debug.print("OPTIONS: \n", .{});
+        if (cmd_opt.options) |opt| {
             for (opt) |value| {
                 var opt_len: usize = 0;
                 if (value.short) |s| {
-                    opt_len += 2;
-                    std.debug.print(" -{c}", .{s});
+                    opt_len += 4;
+                    std.debug.print(" -{c},", .{s});
                 }
                 if (value.long) |l| {
                     opt_len += (l.len + 2);
@@ -123,8 +123,10 @@ pub const Cli = struct {
                 std.debug.print("{s}\n", .{value.info});
             }
         }
+        std.debug.print(" -h, --help          Help message.\n", .{});
         std.debug.print("\n", .{});
-        std.debug.print("COMMANDS: \n\n", .{});
+        if (cmd_opt.name != .root) return;
+        std.debug.print("COMMANDS: \n", .{});
         for (self.cmdsOptions) |value| {
             if (value.info) |info| {
                 const name = @tagName(value.name);
@@ -136,7 +138,7 @@ pub const Cli = struct {
             }
         }
     }
-    pub fn parse(self: *Self) void {}
+    // pub fn parse(self: *Self) void {}
     pub fn deinit(self: *Self) void {
         self.args.deinit();
     }
@@ -153,6 +155,6 @@ pub fn main() !void {
 
     var cli = Cli.init(allocator, "Z Math", usage);
     defer cli.deinit();
-    // try cli.help();
+    cli.help();
     // std.debug.print("{any}", .{cli.cmdsOptions});
 }
