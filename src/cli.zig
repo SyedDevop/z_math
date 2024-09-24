@@ -21,14 +21,15 @@ pub const CmdName = enum { root, lenght, area, history };
 pub const Arg = struct {
     long: ?[]const u8 = null,
     short: ?u8 = null,
-    info: ?[]const u8 = null,
+    info: []const u8,
     type: enum { string, bool },
 };
 
 pub const Cmd = struct {
     name: CmdName,
-    usage: ?[]const u8,
-    options: ?[]const Arg,
+    usage: []const u8,
+    info: ?[]const u8 = null,
+    options: ?[]const Arg = null,
     argData: ?[]Arg = null,
 };
 
@@ -43,21 +44,30 @@ const cmdList: []const Cmd = &.{
                 .info = "Start interactive mode to evaluate expressions based on previous results.",
                 .type = .bool,
             },
+            .{
+                .long = "all",
+                .short = 'a',
+                .info = "Start interactive mode to evaluate expressions based on previous results.",
+                .type = .bool,
+            },
         },
     },
     .{
         .name = .lenght,
         .usage = "m lenght [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
+        .info = "This command convert values between different units of length.",
         .options = null,
     },
     .{
         .name = .area,
         .usage = "m area [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
+        .info = "This command convert values between different units of area.",
         .options = null,
     },
     .{
         .name = .history,
         .usage = "m history [OPTIONS] ",
+        .info = "This command displays the history of previously evaluated expressions.",
         .options = null,
     },
 };
@@ -82,30 +92,67 @@ pub const Cli = struct {
             .name = name,
             .description = description,
             .cmdsOptions = cmdList,
-            // .cmdsOptions = &.{
-            //     .{
-            //         .name = .{ .root = "Home" },
-            //         .usage = "Hello",
-            //         .options = &.{"-i"},
-            //     },
-            // },
         };
     }
     pub fn parse(self: *Self) !void {
         errdefer self.args.deinit();
     }
+    pub fn help(self: Self) !void {
+        const padding = 20;
+        if (self.description) |dis| {
+            std.debug.print("{s}\n\n", .{dis});
+        }
+
+        std.debug.print("USAGE: \n", .{});
+        std.debug.print("  {s}\n\n", .{self.cmdsOptions[0].usage});
+        std.debug.print("OPTIONS: \n\n", .{});
+        if (self.cmdsOptions[0].options) |opt| {
+            for (opt) |value| {
+                var opt_len: usize = 0;
+                if (value.short) |s| {
+                    opt_len += 2;
+                    std.debug.print(" -{c}", .{s});
+                }
+                if (value.long) |l| {
+                    opt_len += (l.len + 2);
+                    std.debug.print(" --{s}", .{l});
+                }
+                for (0..(padding - opt_len)) |_| {
+                    std.debug.print(" ", .{});
+                }
+                std.debug.print("{s}\n", .{value.info});
+            }
+        }
+        std.debug.print("\n", .{});
+        std.debug.print("COMMANDS: \n\n", .{});
+        for (self.cmdsOptions) |value| {
+            if (value.info) |info| {
+                const name = @tagName(value.name);
+                std.debug.print(" {s}", .{name});
+                for (0..(padding - name.len)) |_| {
+                    std.debug.print(" ", .{});
+                }
+                std.debug.print("{s}\n", .{info});
+            }
+        }
+    }
+    pub fn parse(self: *Self) void {}
     pub fn deinit(self: *Self) void {
         self.args.deinit();
     }
 };
-
+const usage =
+    \\CLI Calculator App
+    \\------------------
+    \\A simple and powerful command-line calculator for evaluating math expressions and performing unit conversions for length and area.
+;
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var cli = Cli.init(allocator, "Z Math", "Hello");
+    var cli = Cli.init(allocator, "Z Math", usage);
     defer cli.deinit();
-
-    std.debug.print("{any}", .{cli.cmdsOptions});
+    // try cli.help();
+    // std.debug.print("{any}", .{cli.cmdsOptions});
 }
