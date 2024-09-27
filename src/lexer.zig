@@ -46,6 +46,7 @@ pub const Lexer = struct {
                     break :blk .{ .operator = self.ch };
                 }
             },
+            ':' => .colon,
             // x +  / ^ for this operator.
             42, 43, 47, 94 => .{ .operator = self.ch },
             // -

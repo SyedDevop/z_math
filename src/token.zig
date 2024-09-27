@@ -16,6 +16,14 @@ pub const Token = union(enum) {
     // negate: u8,
     // id: u8,
 
+    mm,
+    cm,
+    m,
+    km,
+    in,
+    ft,
+
+    colon,
     lparen,
     rparen,
     lsquirly,
@@ -33,6 +41,12 @@ pub const Token = union(enum) {
             .{ "tan", .{ .function = "tan" } },
             .{ "sine", .{ .function = "sine" } },
             .{ "cost", .{ .function = "cost" } },
+            .{ "mm", .mm },
+            .{ "cm", .cm },
+            .{ "m", .m },
+            .{ "km", .km },
+            .{ "ft", .ft },
+            .{ "in", .in },
         });
         return map.get(key);
     }
@@ -46,6 +60,12 @@ pub const Token = union(enum) {
 
             .lparen => try std.fmt.format(writer, "(", .{}),
             .rparen => try std.fmt.format(writer, ")", .{}),
+            .mm => try std.fmt.formate(writer, "Mil", .{}),
+            .cm => try std.fmt.formate(writer, "Cm", .{}),
+            .m => try std.fmt.formate(writer, "M", .{}),
+            .km => try std.fmt.formate(writer, "Km", .{}),
+            .in => try std.fmt.formate(writer, "in", .{}),
+            .ft => try std.fmt.formate(writer, "Ft", .{}),
             else => {},
         }
     }

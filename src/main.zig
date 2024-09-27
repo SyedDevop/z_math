@@ -42,6 +42,12 @@ pub fn main() !void {
     }
 
     var lex = Lexer.init(input, allocator);
+    while (lex.hasTokes()) {
+        const tok = try lex.nextToke();
+        print("{any}\n", .{tok});
+    }
+
+    if (0 == 0) return;
     var par = try Parser.init(input, &lex, allocator);
     defer par.deinit();
     try par.parse();
@@ -60,23 +66,38 @@ pub fn main() !void {
 
 const ex = std.testing.expectEqualDeep;
 test "Lexer" {
-    var lex = Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3");
+    var lex = Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3", std.testing.allocator);
     const tokens = [_]Token{
-        .{ .num = "3" },
+        .{ .num = 3 },
         .{ .operator = '+' },
-        .{ .num = "4" },
+        .{ .num = 4 },
         .{ .operator = '*' },
-        .{ .num = "2" },
+        .{ .num = 2 },
         .{ .operator = '/' },
         .lparen,
-        .{ .num = "1" },
+        .{ .num = 1 },
         .{ .operator = '-' },
-        .{ .num = "5" },
+        .{ .num = 5 },
         .rparen,
         .{ .operator = '^' },
-        .{ .num = "2" },
+        .{ .num = 2 },
         .{ .operator = '^' },
-        .{ .num = "3" },
+        .{ .num = 3 },
+        .eof,
+    };
+    for (tokens) |token| {
+        const tok = lex.nextToke();
+        try ex(token, tok);
+    }
+}
+test "Lexer Lenght" {
+    var lex = Lexer.init("mm:45:ft", std.testing.allocator);
+    const tokens = [_]Token{
+        .mm,
+        .colon,
+        .{ .num = 45 },
+        .colon,
+        .ft,
         .eof,
     };
     for (tokens) |token| {
