@@ -188,8 +188,8 @@ pub const Cli = struct {
                 try stdout.print("{s}\n", .{value.info});
             }
         }
-        try stdout.print(" -h, --help          Help message.\n", .{});
-        try stdout.print(" -v, --version       App version.\n", .{});
+        try stdout.print(" -h, --help            Help message.\n", .{});
+        try stdout.print(" -v, --version         App version.\n", .{});
         try stdout.print("\n", .{});
         if (cmd_opt.name != .root) return;
         try stdout.print("COMMANDS: \n", .{});
