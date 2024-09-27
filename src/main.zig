@@ -4,32 +4,34 @@ const parser = @import("./parser.zig");
 const evalStruct = @import("eval.zig");
 
 const Token = @import("./token.zig").Token;
+const App = @import("./cli.zig");
 const print = std.debug.print;
-const Lexer = lexer.Lexer;
 const Parser = parser.Parser;
 const Eval = evalStruct.Eval;
+const Lexer = lexer.Lexer;
+const Cli = App.Cli;
 
-fn stringArg(alloc: std.mem.Allocator) ![]const u8 {
-    var args = try std.process.argsWithAllocator(alloc);
-    defer args.deinit();
-    _ = args.skip();
+const VERSION = "0.1.0";
+const USAGE =
+    \\CLI Calculator App
+    \\------------------
+    \\A simple and powerful command-line calculator for evaluating math expressions and performing unit conversions for length and area.
+;
 
-    var argList = std.ArrayList(u8).init(alloc);
-    defer argList.deinit();
-
-    while (args.next()) |arg| {
-        try argList.appendSlice(std.mem.trim(u8, arg, " "));
-        try argList.append(' ');
-    }
-    return try argList.toOwnedSlice();
-}
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
+    var cli = Cli.init(allocator, "Z Math", USAGE, VERSION);
+    defer cli.deinit();
+    cli.parse() catch |e| {
+        if (e == App.CliErrors.exit) {
+            return;
+        }
+        return e;
+    };
 
-    const input = try stringArg(allocator);
-    defer allocator.free(input);
+    const input = cli.data;
 
     if (input.len <= 1) {
         print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});

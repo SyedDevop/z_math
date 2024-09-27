@@ -1,5 +1,6 @@
 const std = @import("std");
 const Tok = @import("./token.zig");
+
 pub const NodeList = std.MultiArrayList(Node);
 
 pub const Level = enum { err, waring };

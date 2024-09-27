@@ -1,51 +1,45 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-// Welcome to the interactive mode! Type your expressions one by one. Each expression will be evaluated based on the previous result.
-//
-// Type `exit` or `quit` to leave the interactive mode.
-// CLI Calculator App
-// ------------------
-// A simple and powerful command-line calculator for evaluating math expressions and performing unit conversions for length and area.
-//
-// Usage:
-//   calc [OPTIONS] "EXPRESSION"
-//   calc [OPTIONS] convert VALUE FROM_UNIT to TO_UNIT
-//
-// Options:
-//   -i, --interactive    Start calculator in interactive mode. Keep evaluating expressions based on previous results.
-//   -h, --help           Show this help message and exit.
-
 pub const CmdName = enum { root, lenght, area, history };
-
+pub const ArgValue = union(enum) {
+    str: ?[]const u8,
+    bool: ?bool,
+};
 pub const Arg = struct {
-    long: ?[]const u8 = null,
-    short: ?u8 = null,
+    long: []const u8,
+    short: []const u8,
     info: []const u8,
-    type: enum { string, bool },
+    value: ArgValue,
 };
 
+pub const ArgsList = std.ArrayList(Arg);
+
+pub fn isHelpOption(opt: []const u8) bool {
+    return (std.mem.eql(u8, "-h", opt) or std.mem.eql(u8, "--help", opt));
+}
+pub fn isVersionOption(opt: []const u8) bool {
+    return (std.mem.eql(u8, "-v", opt) or std.mem.eql(u8, "--version", opt));
+}
 pub const Cmd = struct {
     name: CmdName,
     usage: []const u8,
     info: ?[]const u8 = null,
     options: ?[]const Arg = null,
-    argData: ?[]Arg = null,
 };
-
-const cmdList: []const Cmd = &.{
-    .{
-        .name = .root,
-        .usage = "m [OPTIONS] \"EXPRESSION\"",
-        .options = &.{
-            .{
-                .long = "interactive",
-                .short = 'i',
-                .info = "Start interactive mode to evaluate expressions based on previous results.",
-                .type = .bool,
-            },
+const rootCmd = Cmd{
+    .name = .root,
+    .usage = "m [OPTIONS] \"EXPRESSION\"",
+    .options = &.{
+        .{
+            .long = "--interactive",
+            .short = "-i",
+            .info = "Start interactive mode to evaluate expressions based on previous results.",
+            .value = .{ .bool = null },
         },
     },
+};
+const cmdList: []const Cmd = &.{
     .{
         .name = .lenght,
         .usage = "m lenght [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
@@ -66,54 +60,128 @@ const cmdList: []const Cmd = &.{
     },
 };
 
+pub const CliErrors = error{
+    exit,
+};
+
 pub const Cli = struct {
     const Self = @This();
-
-    args: std.process.ArgIterator,
     alloc: Allocator,
 
     name: []const u8,
     description: ?[]const u8 = null,
 
-    cmdsOptions: []const Cmd,
-    cmd: ?Cmd = null,
+    computed_args: ArgsList,
+    subCmds: []const Cmd,
+    rootCmd: Cmd,
+    cmd: Cmd,
+    data: []const u8,
+
     version: []const u8,
 
     pub fn init(allocate: Allocator, name: []const u8, description: ?[]const u8, version: []const u8) Self {
-        const args = try std.process.argsWithAllocator(allocate);
         return .{
             .alloc = allocate,
-            .args = args,
             .name = name,
             .description = description,
-            .cmdsOptions = cmdList,
+            .subCmds = cmdList,
+            .rootCmd = rootCmd,
+            .cmd = rootCmd,
             .version = version,
+            .computed_args = ArgsList.init(allocate),
+            .data = "",
         };
     }
     pub fn parse(self: *Self) !void {
-        errdefer self.args.deinit();
+        const args = try std.process.argsAlloc(self.alloc);
+        defer std.process.argsFree(self.alloc, args);
+
+        if (args.len < 2) {
+            try self.help();
+            return CliErrors.exit;
+        }
+        var idx: usize = 1;
+        const cmdEnum = std.meta.stringToEnum(CmdName, args[idx]);
+        const cmd = self.getCmd(cmdEnum);
+        self.cmd = cmd;
+
+        if (cmd.name != .root) {
+            idx += 1;
+            if (args.len < 3) {
+                try self.help();
+                return CliErrors.exit;
+            }
+        }
+        if (isHelpOption(args[idx])) {
+            try self.help();
+            return CliErrors.exit;
+        } else if (isVersionOption(args[idx])) {
+            std.debug.print("Z Math {s}", .{self.version});
+            return CliErrors.exit;
+        }
+        if (self.cmd.options) |opt| {
+            for (opt) |arg| {
+                if (std.mem.eql(u8, arg.long, args[idx]) or std.mem.eql(u8, arg.short, args[idx])) {
+                    idx += 1;
+                    switch (arg.value) {
+                        .bool => {
+                            var copy_arg = arg;
+                            copy_arg.value = .{ .bool = true };
+                            try self.computed_args.append(copy_arg);
+                        },
+                        .str => {
+                            var copy_arg = arg;
+                            copy_arg.value = .{ .str = "Hello  Uzair" };
+                            try self.computed_args.append(copy_arg);
+                            // TODO: Parse the key:value for string option.
+                            std.debug.panic("String option not implemented.", .{});
+                        },
+                    }
+                } else {
+                    switch (arg.value) {
+                        .bool => |b| if (b != null) try self.computed_args.append(arg),
+                        .str => |s| if (s != null) try self.computed_args.append(arg),
+                    }
+                }
+            }
+        }
+
+        var argList = std.ArrayList(u8).init(self.alloc);
+        defer argList.deinit();
+        for (args[idx..]) |arg| {
+            try argList.appendSlice(std.mem.trim(u8, arg, " "));
+            try argList.append(' ');
+        }
+        self.data = try argList.toOwnedSlice();
     }
+
+    pub fn getCmd(self: Self, cmd: ?CmdName) Cmd {
+        if (cmd == null) return self.rootCmd;
+        for (self.subCmds) |value| {
+            if (value.name == cmd) return value;
+        }
+        return self.rootCmd;
+    }
+
     pub fn help(self: Self) !void {
         const padding = 20;
         const stdout = std.io.getStdOut().writer();
         if (self.description) |dis| {
             try stdout.print("Z Math {s}\n{s}\n\n", .{ self.version, dis });
         }
-        const cmd_opt = self.cmdsOptions[0];
+        const cmd_opt = self.cmd;
         try stdout.print("USAGE: \n", .{});
         try stdout.print("  {s}\n\n", .{cmd_opt.usage});
         try stdout.print("OPTIONS: \n", .{});
         if (cmd_opt.options) |opt| {
             for (opt) |value| {
                 var opt_len: usize = 0;
-                if (value.short) |s| {
-                    opt_len += 4;
-                    try stdout.print(" -{c},", .{s});
-                }
-                if (value.long) |l| {
-                    opt_len += (l.len + 2);
-                    try stdout.print(" --{s}", .{l});
-                }
+                opt_len += value.short.len;
+                try stdout.print(" {s},", .{value.short});
+
+                opt_len += value.long.len;
+                try stdout.print(" {s}", .{value.long});
+
                 for (0..(padding - opt_len)) |_| {
                     try stdout.print(" ", .{});
                 }
@@ -125,7 +193,7 @@ pub const Cli = struct {
         try stdout.print("\n", .{});
         if (cmd_opt.name != .root) return;
         try stdout.print("COMMANDS: \n", .{});
-        for (self.cmdsOptions) |value| {
+        for (self.subCmds) |value| {
             if (value.info) |info| {
                 const name = @tagName(value.name);
                 try stdout.print(" {s}", .{name});
@@ -136,23 +204,8 @@ pub const Cli = struct {
             }
         }
     }
-    // pub fn parse(self: *Self) void {}
     pub fn deinit(self: *Self) void {
-        self.args.deinit();
+        self.computed_args.deinit();
+        self.alloc.free(self.data);
     }
 };
-const usage =
-    \\CLI Calculator App
-    \\------------------
-    \\A simple and powerful command-line calculator for evaluating math expressions and performing unit conversions for length and area.
-;
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
-
-    var cli = Cli.init(allocator, "Z Math", usage, "0.1.0");
-    defer cli.deinit();
-    try cli.help();
-    // std.debug.print("{any}", .{cli.cmdsOptions});
-}
