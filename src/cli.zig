@@ -149,8 +149,7 @@ pub const Cli = struct {
         var argList = std.ArrayList(u8).init(self.alloc);
         defer argList.deinit();
         for (args[idx..]) |arg| {
-            try argList.appendSlice(std.mem.trim(u8, arg, " "));
-            try argList.append(' ');
+            try argList.appendSlice(arg);
         }
         self.data = try argList.toOwnedSlice();
     }

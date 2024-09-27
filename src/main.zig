@@ -24,6 +24,7 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     var cli = Cli.init(allocator, "Z Math", USAGE, VERSION);
     defer cli.deinit();
+
     cli.parse() catch |e| {
         if (e == App.CliErrors.exit) {
             return;
