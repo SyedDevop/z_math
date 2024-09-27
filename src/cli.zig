@@ -1,6 +1,8 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const ZAppError = @import("./errors.zig").ZAppErrors;
+
 pub const CmdName = enum { root, lenght, area, history };
 pub const ArgValue = union(enum) {
     str: ?[]const u8,
@@ -60,10 +62,6 @@ const cmdList: []const Cmd = &.{
     },
 };
 
-pub const CliErrors = error{
-    exit,
-};
-
 pub const Cli = struct {
     const Self = @This();
     alloc: Allocator,
@@ -98,7 +96,7 @@ pub const Cli = struct {
 
         if (args.len < 2) {
             try self.help();
-            return CliErrors.exit;
+            return ZAppError.exit;
         }
         var idx: usize = 1;
         const cmdEnum = std.meta.stringToEnum(CmdName, args[idx]);
@@ -109,15 +107,15 @@ pub const Cli = struct {
             idx += 1;
             if (args.len < 3) {
                 try self.help();
-                return CliErrors.exit;
+                return ZAppError.exit;
             }
         }
         if (isHelpOption(args[idx])) {
             try self.help();
-            return CliErrors.exit;
+            return ZAppError.exit;
         } else if (isVersionOption(args[idx])) {
             std.debug.print("Z Math {s}", .{self.version});
-            return CliErrors.exit;
+            return ZAppError.exit;
         }
         if (self.cmd.options) |opt| {
             for (opt) |arg| {

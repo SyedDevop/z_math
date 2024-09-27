@@ -5,6 +5,7 @@ const evalStruct = @import("eval.zig");
 
 const Token = @import("./token.zig").Token;
 const App = @import("./cli.zig");
+const ZAppError = @import("./errors.zig").ZAppErrors;
 const print = std.debug.print;
 const Parser = parser.Parser;
 const Eval = evalStruct.Eval;
@@ -26,7 +27,7 @@ pub fn main() !void {
     defer cli.deinit();
 
     cli.parse() catch |e| {
-        if (e == App.CliErrors.exit) {
+        if (e == ZAppError.exit) {
             return;
         }
         return e;
@@ -45,23 +46,10 @@ pub fn main() !void {
     defer par.deinit();
     try par.parse();
 
-    if (par.errors.items.len > 0) {
-        for (par.errors.items) |err| {
-            if (err.level == .err) {
-                print("The input is :: {s} ::\n\x1b[0m", .{input});
-                std.debug.print("\x1b[31mError: {s}\x1b[0m\n", .{err.message});
-            } else {
-                std.debug.print("\x1b[33mWaring: {s}\x1b[0m\n", .{err.message});
-            }
-            if (err.token) |tok| {
-                std.debug.print("\x1b[33mToke:: {any}\x1b[0m\n", .{tok});
-            }
-            if (err.message_alloced) {
-                allocator.free(err.message);
-            }
-        }
-        return;
-    }
+    par.evaluate_errors(input) catch |e| {
+        if (e == ZAppError.exit) return;
+        return e;
+    };
 
     var eval = Eval.init(&par.ast, allocator);
     defer eval.deinit();

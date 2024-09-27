@@ -7,6 +7,7 @@ const Token = @import("./token.zig").Token;
 const Allocator = std.mem.Allocator;
 const Lexer = lexer.Lexer;
 
+const ZAppError = @import("./errors.zig").ZAppErrors;
 const Error = Allocator.Error || std.fmt.ParseFloatError;
 
 pub const Parser = struct {
@@ -84,7 +85,24 @@ pub const Parser = struct {
             try self.errors.append(self.alloc, .{ .message = "Incomplete expression: Missing operator after the number." });
         }
     }
-
+    pub fn evaluate_errors(self: Self, input: []const u8) !void {
+        if (self.errors.items.len == 0) return;
+        for (self.errors.items) |err| {
+            if (err.level == .err) {
+                std.debug.print("The input is :: {s} ::\n\x1b[0m", .{input});
+                std.debug.print("\x1b[31mError: {s}\x1b[0m\n", .{err.message});
+            } else {
+                std.debug.print("\x1b[33mWaring: {s}\x1b[0m\n", .{err.message});
+            }
+            if (err.token) |tok| {
+                std.debug.print("\x1b[33mToke:: {any}\x1b[0m\n", .{tok});
+            }
+            if (err.message_alloced) {
+                self.alloc.free(err.message);
+            }
+        }
+        return ZAppError.exit;
+    }
     fn parseExpression(self: *Self) Error!usize {
         var lhs_idx = try self.parseTerm();
         while (self.isTokenOp('+') or self.isTokenOp('-')) {
