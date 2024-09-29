@@ -36,6 +36,15 @@ pub const Token = union(enum) {
     not_equal,
 
     eof,
+    pub fn get_unit(tok: Token) f16 {
+        return switch (tok) {
+            .mm => 3,
+            .cm => 2,
+            .m => 1,
+            .km => -3,
+            else => 0,
+        };
+    }
     pub fn keyword(key: []const u8) ?Token {
         const map = std.StaticStringMap(Token).initComptime(.{
             .{ "tan", .{ .function = "tan" } },

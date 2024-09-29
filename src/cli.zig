@@ -4,6 +4,8 @@ const Allocator = std.mem.Allocator;
 const ZAppError = @import("./errors.zig").ZAppErrors;
 
 pub const CmdName = enum { root, lenght, area, history };
+pub const HistoryType = enum { lenght, area, mian };
+
 pub const ArgValue = union(enum) {
     str: ?[]const u8,
     bool: ?bool,
@@ -57,8 +59,15 @@ const cmdList: []const Cmd = &.{
     .{
         .name = .history,
         .usage = "m history [OPTIONS] ",
-        .info = "This command displays the history of previously evaluated expressions.",
-        .options = null,
+        .info = "This command displays the history of previously evaluated expressions. By default, it shows the main history log.",
+        .options = &.{
+            .{
+                .long = "--type",
+                .short = "-t",
+                .info = "Specifies the type of history to display. Options include: 'length' and 'area'. The default is 'main'.",
+                .value = .{ .str = @tagName(HistoryType.mian) },
+            },
+        },
     },
 };
 
