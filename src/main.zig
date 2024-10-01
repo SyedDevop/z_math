@@ -22,6 +22,7 @@ const MAIN_OUT_FORMATE =
     \\The input is :: {s} ::
     \\Ans: {d}
     \\
+    \\
 ;
 
 fn getConfFile(alloc: std.mem.Allocator) !std.fs.File {
@@ -63,8 +64,9 @@ pub fn main() !void {
     var cli = Cli.init(allocator, "Z Math", USAGE, VERSION);
     defer cli.deinit();
 
-    const file = try getConfFile(allocator);
-    defer file.close();
+    const con_file = try getConfFile(allocator);
+    defer con_file.close();
+    const con_stat = try con_file.stat();
 
     cli.parse() catch |e| {
         if (e == ZAppError.exit) return;
@@ -73,11 +75,11 @@ pub fn main() !void {
 
     const input = cli.data;
 
-    if (input.len <= 1) {
-        print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
-        std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m\n", .{});
-        return;
-    }
+    // if (input.len <= 1) {
+    //     print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
+    //     std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m\n", .{});
+    //     return;
+    // }
 
     var lex = Lexer.init(input, allocator);
 
@@ -95,15 +97,14 @@ pub fn main() !void {
             var eval = Eval.init(&par.ast, allocator);
             defer eval.deinit();
 
-            const stat = try file.stat();
-            try file.seekTo(stat.size);
+            try con_file.seekTo(con_stat.size);
 
             // print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
             // print("Ans: {d}\n", .{try eval.eval()});
             const outpust = try std.fmt.allocPrint(allocator, MAIN_OUT_FORMATE, .{ input, try eval.eval() });
             defer allocator.free(outpust);
             print("\x1b[32m{s}\x1b[0m", .{outpust});
-            _ = try file.writeAll(outpust);
+            _ = try con_file.writeAll(outpust);
         },
         .lenght => {
             var c: u8 = 1;
@@ -128,7 +129,18 @@ pub fn main() !void {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
         },
         .history => {
-            std.debug.panic("\x1b[1;91History not Implemented\x1b[0m", .{});
+            const buf = try allocator.alloc(u8, try con_file.getEndPos());
+            defer allocator.free(buf);
+            // try con_file.seekFromEnd(0);
+            _ = try con_file.readAll(buf);
+            var it = std.mem.splitBackwardsSequence(u8, buf, "\n");
+            _ = it.next();
+            _ = it.next();
+            while (it.next()) |a| {
+                std.debug.print("{s}\n", .{a});
+            }
+            return;
+            // std.debug.panic("\x1b[1;91History not Implemented\x1b[0m", .{});
         },
     }
 }

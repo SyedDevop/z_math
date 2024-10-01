@@ -29,6 +29,7 @@ pub const Cmd = struct {
     name: CmdName,
     usage: []const u8,
     info: ?[]const u8 = null,
+    min_arg: u8 = 1,
     options: ?[]const Arg = null,
 };
 const rootCmd = Cmd{
@@ -58,6 +59,7 @@ const cmdList: []const Cmd = &.{
     },
     .{
         .name = .history,
+        .min_arg = 0,
         .usage = "m history [OPTIONS] ",
         .info = "This command displays the history of previously evaluated expressions. By default, it shows the main history log.",
         .options = &.{
@@ -114,9 +116,12 @@ pub const Cli = struct {
 
         if (cmd.name != .root) {
             idx += 1;
-            if (args.len < 3) {
+            const min_arg_len = 2 + cmd.min_arg;
+            if (args.len < min_arg_len) {
                 try self.help();
                 return ZAppError.exit;
+            } else {
+                return;
             }
         }
         if (isHelpOption(args[idx])) {
