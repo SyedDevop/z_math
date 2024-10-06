@@ -9,6 +9,7 @@ pub const HistoryType = enum { lenght, area, mian };
 pub const ArgValue = union(enum) {
     str: ?[]const u8,
     bool: ?bool,
+    num: ?i32,
 };
 pub const Arg = struct {
     long: []const u8,
@@ -16,6 +17,7 @@ pub const Arg = struct {
     info: []const u8,
     value: ArgValue,
 };
+pub const ArgError = error{ArgValueNotGiven};
 
 pub const ArgsList = std.ArrayList(Arg);
 
@@ -69,6 +71,18 @@ const cmdList: []const Cmd = &.{
                 .info = "Specifies the type of history to display. Options include: 'length' and 'area'. The default is 'main'.",
                 .value = .{ .str = @tagName(HistoryType.mian) },
             },
+            .{
+                .long = "--earlier",
+                .short = "-e",
+                .info = "Display history entries from the earliest to the most recent. Defaults to showing recent entries.",
+                .value = .{ .bool = false },
+            },
+            .{
+                .long = "--limit",
+                .short = "-l",
+                .info = "Limit the number of history entries displayed. Default is 5.",
+                .value = .{ .num = 5 },
+            },
         },
     },
 };
@@ -88,7 +102,9 @@ pub const Cli = struct {
 
     version: []const u8,
 
-    pub fn init(allocate: Allocator, name: []const u8, description: ?[]const u8, version: []const u8) Self {
+    errorMess: []u8,
+
+    pub fn init(allocate: Allocator, name: []const u8, description: ?[]const u8, version: []const u8) !Self {
         return .{
             .alloc = allocate,
             .name = name,
@@ -99,63 +115,72 @@ pub const Cli = struct {
             .version = version,
             .computed_args = ArgsList.init(allocate),
             .data = "",
+            .errorMess = try allocate.alloc(u8, 255),
         };
     }
     pub fn parse(self: *Self) !void {
         const args = try std.process.argsAlloc(self.alloc);
         defer std.process.argsFree(self.alloc, args);
 
-        if (args.len < 2) {
-            try self.help();
-            return ZAppError.exit;
-        }
         var idx: usize = 1;
         const cmdEnum = std.meta.stringToEnum(CmdName, args[idx]);
         const cmd = self.getCmd(cmdEnum);
         self.cmd = cmd;
-
         if (cmd.name != .root) {
             idx += 1;
-            const min_arg_len = 2 + cmd.min_arg;
-            if (args.len < min_arg_len) {
-                try self.help();
-                return ZAppError.exit;
-            } else {
-                return;
+        }
+        if (self.cmd.options) |opt| {
+            for (opt) |arg| {
+                if (idx < args.len and (std.mem.eql(u8, arg.long, args[idx]) or std.mem.eql(u8, arg.short, args[idx]))) {
+                    var copy_arg = arg;
+                    switch (arg.value) {
+                        .bool => {
+                            copy_arg.value = .{ .bool = true };
+                            try self.computed_args.append(copy_arg);
+                        },
+                        .str => {
+                            if (idx + 1 >= args.len) {
+                                _ = try std.fmt.bufPrint(self.errorMess, "Error: value reqaired after '{s}'", .{args[idx]});
+                                return ArgError.ArgValueNotGiven;
+                            }
+                            idx += 1;
+                            copy_arg.value = .{ .str = args[idx] };
+                            try self.computed_args.append(copy_arg);
+                        },
+                        .num => {
+                            if (idx + 1 >= args.len) {
+                                _ = try std.fmt.bufPrint(self.errorMess, "Error: value reqaired after '{s}'", .{args[idx]});
+                                return ArgError.ArgValueNotGiven;
+                            }
+                            idx += 1;
+                            const num = std.fmt.parseInt(i32, args[idx], 10) catch |e| switch (e) {
+                                error.InvalidCharacter => null,
+                                else => return e,
+                            };
+                            copy_arg.value = .{ .num = num };
+                            try self.computed_args.append(copy_arg);
+                        },
+                    }
+                    idx += 1;
+                } else {
+                    // NOTE: If an argument has a default value and is not provided,
+                    // add it to computed_args.
+                    switch (arg.value) {
+                        .bool => |b| if (b != null) try self.computed_args.append(arg),
+                        .str => |s| if (s != null) try self.computed_args.append(arg),
+                        .num => |n| if (n != null) try self.computed_args.append(arg),
+                    }
+                }
             }
         }
+
+        if (idx >= args.len) return;
         if (isHelpOption(args[idx])) {
             try self.help();
             return ZAppError.exit;
         } else if (isVersionOption(args[idx])) {
             std.debug.print("Z Math {s}", .{self.version});
             return ZAppError.exit;
-        }
-        if (self.cmd.options) |opt| {
-            for (opt) |arg| {
-                if (std.mem.eql(u8, arg.long, args[idx]) or std.mem.eql(u8, arg.short, args[idx])) {
-                    idx += 1;
-                    switch (arg.value) {
-                        .bool => {
-                            var copy_arg = arg;
-                            copy_arg.value = .{ .bool = true };
-                            try self.computed_args.append(copy_arg);
-                        },
-                        .str => {
-                            var copy_arg = arg;
-                            copy_arg.value = .{ .str = "Hello  Uzair" };
-                            try self.computed_args.append(copy_arg);
-                            // TODO: Parse the key:value for string option.
-                            std.debug.panic("String option not implemented.", .{});
-                        },
-                    }
-                } else {
-                    switch (arg.value) {
-                        .bool => |b| if (b != null) try self.computed_args.append(arg),
-                        .str => |s| if (s != null) try self.computed_args.append(arg),
-                    }
-                }
-            }
         }
 
         var argList = std.ArrayList(u8).init(self.alloc);
@@ -172,6 +197,33 @@ pub const Cli = struct {
             if (value.name == cmd) return value;
         }
         return self.rootCmd;
+    }
+
+    pub fn getNumArg(self: Self, arg_name: []const u8) !?i32 {
+        for (self.computed_args.items) |arg| {
+            if (std.mem.eql(u8, arg.long, arg_name) or std.mem.eql(u8, arg.short, arg_name)) {
+                if (arg.value != .num) {
+                    return error.ArgIsNotNum;
+                }
+                return arg.value.num;
+            }
+        }
+        return null;
+    }
+    pub fn getBoolArg(self: Self, arg_name: []const u8) !bool {
+        for (self.computed_args.items) |arg| {
+            if (std.mem.eql(u8, arg.long, arg_name) or std.mem.eql(u8, arg.short, arg_name)) {
+                if (arg.value != .bool) {
+                    return error.ArgIsNotBool;
+                }
+                if (arg.value.bool) |val| {
+                    return val;
+                } else {
+                    return false;
+                }
+            }
+        }
+        return false;
     }
 
     pub fn help(self: Self) !void {
@@ -218,5 +270,20 @@ pub const Cli = struct {
     pub fn deinit(self: *Self) void {
         self.computed_args.deinit();
         self.alloc.free(self.data);
+        self.alloc.free(self.errorMess);
     }
 };
+
+test "Parse Strings" {
+    _ = .{
+        .{ .{ "--len", "=", "60" }, true },
+        .{ .{ "--len", "60" }, true },
+        .{ .{ "--len=", "60" }, true },
+        .{ .{"--len=60"}, true },
+        .{ .{ "--len", "=60" }, true },
+        .{ .{"--len"}, true },
+        .{ .{"--len60"}, true },
+        .{ .{"--len="}, true },
+        .{ .{ "--len", "=" }, true },
+    };
+}
