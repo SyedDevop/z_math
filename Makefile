@@ -6,3 +6,6 @@ install:
 
 test:
 	zig build test --summary all --verbose
+
+tail:
+	tail -f ~/.config/z_math/.zmath | bat --paging=never --file-name=log
