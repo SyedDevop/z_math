@@ -11,6 +11,7 @@ const Parser = parser.Parser;
 const Eval = evalStruct.Eval;
 const Lexer = lexer.Lexer;
 const Cli = App.Cli;
+const ArgError = App.ArgError;
 
 const VERSION = "0.1.0";
 const USAGE =
@@ -21,15 +22,18 @@ const USAGE =
 const MAIN_OUT_FORMATE =
     \\The input is :: {s} ::
     \\Ans: {d}
-    \\
-    \\
+;
+const NO_HISTORY_MES =
+    \\No history available yet.
+    \\Start by running a calculation to save your work.
+    \\Use -h or --help for more info.
 ;
 
 fn getConfFile(alloc: std.mem.Allocator) !std.fs.File {
     if (std.zig.EnvVar.HOME.getPosix()) |home| {
-        const dir_path = try std.fs.path.join(alloc, &.{ home, ".config/.z_math" });
+        const dir_path = try std.fs.path.join(alloc, &.{ home, ".config/z_math" });
         defer alloc.free(dir_path);
-        const file_path = try std.fs.path.join(alloc, &.{ dir_path, ".zmath.txt" });
+        const file_path = try std.fs.path.join(alloc, &.{ dir_path, ".zmath" });
         defer alloc.free(file_path);
 
         const file = std.fs.cwd().openFile(file_path, .{ .mode = .read_write }) catch |err| switch (err) {
@@ -61,7 +65,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    var cli = Cli.init(allocator, "Z Math", USAGE, VERSION);
+    var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
     defer cli.deinit();
 
     const con_file = try getConfFile(allocator);
@@ -70,6 +74,10 @@ pub fn main() !void {
 
     cli.parse() catch |e| {
         if (e == ZAppError.exit) return;
+        if (e == ArgError.ArgValueNotGiven) {
+            std.debug.print("{s}", .{cli.errorMess});
+            return;
+        }
         return e;
     };
 
@@ -99,12 +107,11 @@ pub fn main() !void {
 
             try con_file.seekTo(con_stat.size);
 
-            // print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
-            // print("Ans: {d}\n", .{try eval.eval()});
             const outpust = try std.fmt.allocPrint(allocator, MAIN_OUT_FORMATE, .{ input, try eval.eval() });
             defer allocator.free(outpust);
             print("\x1b[32m{s}\x1b[0m", .{outpust});
             _ = try con_file.writeAll(outpust);
+            _ = try con_file.writeAll("\r\n");
         },
         .lenght => {
             var c: u8 = 1;
@@ -129,22 +136,63 @@ pub fn main() !void {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
         },
         .history => {
+            const file_size = try con_file.getEndPos();
+            if (file_size == 0) {
+                std.debug.print(NO_HISTORY_MES, .{});
+                return;
+            }
             const buf = try allocator.alloc(u8, try con_file.getEndPos());
             defer allocator.free(buf);
-            // try con_file.seekFromEnd(0);
             _ = try con_file.readAll(buf);
-            var it = std.mem.splitBackwardsSequence(u8, buf, "\n");
-            _ = it.next();
-            _ = it.next();
-            while (it.next()) |a| {
-                std.debug.print("{s}\n", .{a});
+            const is_earlier = try cli.getBoolArg("-e");
+            const limit = try cli.getNumArg("-l");
+            if (is_earlier) {
+                print_earlier_history(buf, limit);
+            } else {
+                print_recent_history(buf, limit);
             }
             return;
-            // std.debug.panic("\x1b[1;91History not Implemented\x1b[0m", .{});
         },
     }
 }
 
+fn print_recent_history(buf: []const u8, limit: ?i32) void {
+    var i: usize = buf.len - 3;
+    var point: usize = buf.len - 1;
+    var count: ?i32 = limit;
+    while (i > 0) : (i -= 1) {
+        if (i > 0) {
+            if (count != null and count == 0) break;
+            if (i == 1) {
+                std.debug.print("\n{s}\n", .{buf[i - 1 .. point]});
+            }
+            if (buf[i] == '\n' and buf[i - 1] == '\r') {
+                std.debug.print("{s}\n", .{buf[i..point]});
+                point = i;
+                if (count) |c| {
+                    count = c - 1;
+                }
+            }
+        }
+    }
+}
+fn print_earlier_history(buf: []const u8, limit: ?i32) void {
+    var i: usize = 0;
+    var point: usize = 0;
+    var count: ?i32 = limit;
+    while (i < buf.len) : (i += 1) {
+        if (buf.len > i) {
+            if (count != null and count == 0) break;
+            if (buf[i] == '\r' and buf[i + 1] == '\n') {
+                std.debug.print("{s}\n", .{buf[point..i]});
+                point = i;
+                if (count) |c| {
+                    count = c - 1;
+                }
+            }
+        }
+    }
+}
 const ex = std.testing.expectEqualDeep;
 test "Lexer" {
     var lex = Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3", std.testing.allocator);
