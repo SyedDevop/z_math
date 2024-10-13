@@ -187,6 +187,7 @@ pub const Cli = struct {
         defer argList.deinit();
         for (args[idx..]) |arg| {
             try argList.appendSlice(arg);
+            try argList.append(' ');
         }
         self.data = try argList.toOwnedSlice();
     }
