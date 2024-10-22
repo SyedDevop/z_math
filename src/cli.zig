@@ -118,6 +118,7 @@ pub const Cli = struct {
             .errorMess = try allocate.alloc(u8, 255),
         };
     }
+    // FIX : index out of bounds error if no args is provided for root cmd.
     pub fn parse(self: *Self) !void {
         const args = try std.process.argsAlloc(self.alloc);
         defer std.process.argsFree(self.alloc, args);

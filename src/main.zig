@@ -12,6 +12,7 @@ const Eval = evalStruct.Eval;
 const Lexer = lexer.Lexer;
 const Cli = App.Cli;
 const ArgError = App.ArgError;
+const Db = @import("./db/db.zig").DB;
 
 const VERSION = "0.1.0";
 const USAGE =
@@ -59,11 +60,14 @@ fn getConfFile(alloc: std.mem.Allocator) !std.fs.File {
         return ZAppError.exit;
     }
 }
-
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
+
+    // good idea to pass EXResCode to get extended result codes (more detailed error codes)
+    _ = try Db.init(allocator);
+    if (0 == 0) return;
 
     var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
     defer cli.deinit();
