@@ -40,16 +40,9 @@ pub const DB = struct {
         self.alloc.free(self.path);
     }
 
-    // std.debug.print("Id: {d} input: {s} output {s} expi_id {s} time {s} \n", .{
-    //     row.int(0),
-    //     row.text(1),
-    //     row.text(2),
-    //     row.text(3),
-    //     row.text(4),
-    // });
-    pub fn getAllEzprs(self: *Self) ![]Expr {
+    pub fn getAllEzprs(self: *Self, limit: u8) ![]Expr {
         var result = std.ArrayList(Expr).init(self.alloc);
-        var rows = try self.conn.rows(sql.all_exper_query, .{});
+        var rows = try self.conn.rows(sql.all_exper_query, .{limit});
         defer rows.deinit();
         while (rows.next()) |row| {
             const v = Expr{
@@ -60,7 +53,6 @@ pub const DB = struct {
                 .created_at = try self.alloc.dupe(u8, row.text(4)),
             };
             try result.append(v);
-            // std.debug.print("Id: {d} input: {s} output {s} expi_id {s} time {s} \n", .{ v.id, v.input, v.output, v.execution_id, v.created_at });
         }
         return try result.toOwnedSlice();
     }

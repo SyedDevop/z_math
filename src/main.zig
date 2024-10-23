@@ -68,7 +68,7 @@ pub fn main() !void {
     // good idea to pass EXResCode to get extended result codes (more detailed error codes)
     var db = try Db.init(allocator);
     defer db.deinit();
-    const rows = try db.getAllEzprs();
+    const rows = try db.getAllEzprs(3);
     defer {
         for (rows) |row| row.destory(allocator);
         allocator.free(rows);

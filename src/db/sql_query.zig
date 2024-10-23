@@ -16,4 +16,4 @@ pub const create_expression_table_query =
 
 pub const index_expression_query = "CREATE INDEX IF NOT EXISTS idx_execution_id ON Expressions (execution_id);";
 
-pub const all_exper_query = "SELECT * FROM Expressions";
+pub const all_exper_query = "SELECT * FROM (SELECT * FROM Expressions ORDER BY id DESC LIMIT ?1 ) ORDER BY id;";
