@@ -3,22 +3,19 @@ const std = @import("std");
 
 const ZAppErrors = @import("../errors.zig").ZAppErrors;
 const Allocator = std.mem.Allocator;
+const sql = @import("./sql_query.zig");
+const Expr = @import("./expr.zig").Expr;
 
 const HOME_ENV = "HOME";
 
-pub fn getDbPath() ![:0]u8 {
-    var buf: [1024]u8 = undefined;
+pub fn getDbPath(alloc: Allocator) ![:0]u8 {
     if (std.posix.getenv(HOME_ENV)) |home_env| {
-        return std.fmt.bufPrintZ(&buf, "{s}/z_math", .{home_env});
+        return try std.fmt.allocPrintZ(alloc, "{s}/z_math", .{home_env});
     }
     std.debug.print("{s} env not set\n", .{HOME_ENV});
     std.debug.print("Z_Math only supports the POSIX-compliant system.\n", .{});
     std.process.exit(1);
 }
-const Tabels = enum {
-    Expressions,
-};
-
 pub const DB = struct {
     const Self = @This();
 
@@ -27,10 +24,11 @@ pub const DB = struct {
     conn: zqlite.Conn,
     path: [:0]u8,
     pub fn init(allocator: Allocator) !Self {
-        const db_path = try getDbPath();
+        const db_path = try getDbPath(allocator);
         const flags = zqlite.OpenFlags.Create | zqlite.OpenFlags.EXResCode;
         var conn = try zqlite.open(db_path, flags);
-        try create_table(allocator, &conn);
+        try createTable(&conn);
+
         return .{
             .conn = conn,
             .path = db_path,
@@ -39,24 +37,44 @@ pub const DB = struct {
     }
     pub fn deinit(self: *Self) void {
         self.conn.close();
+        self.alloc.free(self.path);
     }
-    fn create_table(alloc: Allocator, conn: *zqlite.Conn) !void {
-        const quer = try std.fmt.allocPrintZ(alloc,
-            \\CREATE TABLE IF NOT EXISTS {s} (
-            \\Id            INT PRIMARY KEY     NOT NULL,
-            \\input         TEXT NOT NULL,
-            \\output        TEXT NOT NULL,
-            \\execution_id  TEXT NOT NULL,
-            \\created_at    TEXT DEFAULT CURRENT_TIMESTAMP);
-        , .{@tagName(Tabels.Expressions)});
-        defer alloc.free(quer);
-        conn.exec(quer, .{}) catch {
-            std.debug.print("{s}", .{quer});
+
+    // std.debug.print("Id: {d} input: {s} output {s} expi_id {s} time {s} \n", .{
+    //     row.int(0),
+    //     row.text(1),
+    //     row.text(2),
+    //     row.text(3),
+    //     row.text(4),
+    // });
+    pub fn getAllEzprs(self: *Self) ![]Expr {
+        var result = std.ArrayList(Expr).init(self.alloc);
+        var rows = try self.conn.rows(sql.all_exper_query, .{});
+        defer rows.deinit();
+        while (rows.next()) |row| {
+            const v = Expr{
+                .id = row.int(0),
+                .input = try self.alloc.dupe(u8, row.text(1)),
+                .output = try self.alloc.dupe(u8, row.text(2)),
+                .execution_id = try self.alloc.dupe(u8, row.text(3)),
+                .created_at = try self.alloc.dupe(u8, row.text(4)),
+            };
+            try result.append(v);
+            // std.debug.print("Id: {d} input: {s} output {s} expi_id {s} time {s} \n", .{ v.id, v.input, v.output, v.execution_id, v.created_at });
+        }
+        return try result.toOwnedSlice();
+    }
+
+    fn createTable(conn: *zqlite.Conn) !void {
+        conn.execNoArgs(sql.create_expression_table_query) catch {
+            std.debug.print("{s}", .{sql.create_expression_table_query});
             std.debug.print("{s}", .{conn.lastError()});
             std.process.exit(1);
         };
-        const query = try std.fmt.allocPrintZ(alloc, "CREATE INDEX IF NOT EXISTS idx_execution_id ON {s} (execution_id);", .{@tagName(Tabels.Expressions)});
-        defer alloc.free(query);
-        try conn.execNoArgs(query);
+        try conn.execNoArgs(sql.index_expression_query);
+        // conn.exec("INSERT INTO Expressions (input,output,execution_id) VALUES (?1,?2,?3);", .{ "132*465", "123456", "79asd798" }) catch {
+        //     std.debug.print("{s}\n", .{conn.lastError()});
+        //     std.process.exit(1);
+        // };
     }
 };

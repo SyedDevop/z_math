@@ -66,7 +66,16 @@ pub fn main() !void {
     defer _ = gpa.deinit();
 
     // good idea to pass EXResCode to get extended result codes (more detailed error codes)
-    _ = try Db.init(allocator);
+    var db = try Db.init(allocator);
+    defer db.deinit();
+    const rows = try db.getAllEzprs();
+    defer {
+        for (rows) |row| row.destory(allocator);
+        allocator.free(rows);
+    }
+    for (rows) |v| {
+        std.debug.print("Id: {d} input: {s} output {s} expi_id {s} time {s} \n", .{ v.id, v.input, v.output, v.execution_id, v.created_at });
+    }
     if (0 == 0) return;
 
     var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
