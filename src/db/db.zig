@@ -64,9 +64,5 @@ pub const DB = struct {
             std.process.exit(1);
         };
         try conn.execNoArgs(sql.index_expression_query);
-        // conn.exec("INSERT INTO Expressions (input,output,execution_id) VALUES (?1,?2,?3);", .{ "132*465", "123456", "79asd798" }) catch {
-        //     std.debug.print("{s}\n", .{conn.lastError()});
-        //     std.process.exit(1);
-        // };
     }
 };
