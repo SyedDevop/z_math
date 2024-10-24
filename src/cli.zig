@@ -3,7 +3,25 @@ const Allocator = std.mem.Allocator;
 
 const ZAppError = @import("./errors.zig").ZAppErrors;
 
-pub const CmdName = enum { root, lenght, area, history, delete };
+pub const CmdName = enum {
+    root,
+    length,
+    area,
+    history,
+    delete,
+    completion,
+
+    pub fn getCmdNameList(alloc: Allocator) ![]const u8 {
+        var result = std.ArrayList(u8).init(alloc);
+        inline for (@typeInfo(CmdName).Enum.fields) |field| {
+            if (field.value == 0) continue;
+            try result.appendSlice(field.name);
+            try result.append(' ');
+        }
+
+        return result.toOwnedSlice(); // Return only the filled portion of the array
+    }
+};
 pub const HistoryType = enum { lenght, area, mian };
 
 pub const ArgValue = union(enum) {
@@ -48,7 +66,7 @@ const rootCmd = Cmd{
 };
 const cmdList: []const Cmd = &.{
     .{
-        .name = .lenght,
+        .name = .length,
         .usage = "m lenght [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
         .info = "This command convert values between different units of length.",
         .options = null,
@@ -108,6 +126,13 @@ const cmdList: []const Cmd = &.{
             },
         },
     },
+    .{
+        .name = .completion,
+        .min_arg = 0,
+        .usage = "m completion ",
+        .info = "This command Generate the autocompletion script for gitpuller for the specified shell.",
+        .options = null,
+    },
 };
 
 pub const Cli = struct {
@@ -116,6 +141,7 @@ pub const Cli = struct {
 
     name: []const u8,
     description: ?[]const u8 = null,
+    process_name: []const u8,
 
     computed_args: ArgsList,
     subCmds: []const Cmd,
@@ -138,6 +164,7 @@ pub const Cli = struct {
             .version = version,
             .computed_args = ArgsList.init(allocate),
             .data = "",
+            .process_name = "",
             .errorMess = try allocate.alloc(u8, 255),
         };
     }
@@ -151,6 +178,7 @@ pub const Cli = struct {
         const cmd = self.getCmd(cmdEnum);
 
         self.cmd = cmd;
+        self.process_name = try self.alloc.dupe(u8, args[0]);
         if (cmd.name != .root) {
             idx += 1;
         }
@@ -304,6 +332,7 @@ pub const Cli = struct {
         self.computed_args.deinit();
         self.alloc.free(self.data);
         self.alloc.free(self.errorMess);
+        self.alloc.free(self.process_name);
     }
 };
 

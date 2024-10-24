@@ -15,7 +15,7 @@ const ArgError = App.ArgError;
 const Db = @import("./db/db.zig").DB;
 const Order = @import("./db/sql_query.zig").Order;
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -25,6 +25,29 @@ const NO_HISTORY_MES =
     \\No history available yet.
     \\Start by running a calculation to save your work.
     \\Use -h or --help for more info.
+;
+
+const AUTOCOMPLETION =
+    \\ _m_cli_autocomplete() {{
+    \\     local cur prev opts
+    \\     COMPREPLY=()
+    \\
+    \\     # Get the current word the user is typing
+    \\     cur="${{COMP_WORDS[COMP_CWORD]}}"
+    \\
+    \\     # Get the previous word on the command line
+    \\     prev="${{COMP_WORDS[COMP_CWORD-1]}}"
+    \\
+    \\     # Define possible commands for autocompletion
+    \\     opts="{s}"
+    \\
+    \\     # Use compgen to generate the possible completions based on cur
+    \\     COMPREPLY=( $(compgen -W "${{opts}}" -- ${{cur}}) )
+    \\
+    \\     return 0
+    \\ }}
+    \\
+    \\ complete -F _m_cli_autocomplete m
 ;
 
 pub fn main() !void {
@@ -88,7 +111,7 @@ pub fn main() !void {
                 std.debug.print("All entries have been successfully deleted.\n", .{});
             }
         },
-        .lenght => {
+        .length => {
             var c: u8 = 1;
             var from: f16 = 0;
             var to: f16 = 0;
@@ -143,6 +166,11 @@ pub fn main() !void {
             }
 
             return;
+        },
+        .completion => {
+            const opts = try App.CmdName.getCmdNameList(allocator);
+            defer allocator.free(opts);
+            std.debug.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
         },
     }
 }
