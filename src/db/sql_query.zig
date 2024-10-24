@@ -10,16 +10,19 @@ pub const create_expression_table_query =
     \\id            INTEGER PRIMARY KEY,
     \\input         TEXT NOT NULL,
     \\output        TEXT NOT NULL,
-    \\execution_id  TEXT NOT NULL,
+    \\execution_id  INTEGER NOT NULL,
     \\created_at    TEXT DEFAULT CURRENT_TIMESTAMP);
 ;
 
 pub const index_expression_query = "CREATE INDEX IF NOT EXISTS idx_execution_id ON Expressions (execution_id);";
 pub const Order = enum { DESC, ASC };
 pub const Options = struct {
-    limit: u8 = 5,
+    limit: u64 = 5,
     order: Order = .DESC,
 };
+pub fn allExpersQuery(order: Order) ![]const u8 {
+    return try std.fmt.bufPrint(&buf, "SELECT * FROM Expressions ORDER BY id {s};", .{@tagName(order)});
+}
 pub fn expersQuery(opt: Options) ![]const u8 {
     return try std.fmt.bufPrint(&buf, "SELECT * FROM (SELECT * FROM Expressions ORDER BY id {s} LIMIT {d} ) ORDER BY id;", .{ @tagName(opt.order), opt.limit });
 }

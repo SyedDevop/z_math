@@ -3,7 +3,7 @@ const Allocator = std.mem.Allocator;
 
 const ZAppError = @import("./errors.zig").ZAppErrors;
 
-pub const CmdName = enum { root, lenght, area, history };
+pub const CmdName = enum { root, lenght, area, history, delete };
 pub const HistoryType = enum { lenght, area, mian };
 
 pub const ArgValue = union(enum) {
@@ -60,6 +60,17 @@ const cmdList: []const Cmd = &.{
         .options = null,
     },
     .{
+        .name = .delete,
+        .usage = "m delete [ID] [OPTIONS]",
+        .info = "This command delete the expressions for given [ID].",
+        .options = &.{.{
+            .long = "--all",
+            .short = "-a",
+            .info = "Delete all the entries.",
+            .value = .{ .bool = false },
+        }},
+    },
+    .{
         .name = .history,
         .min_arg = 0,
         .usage = "m history [OPTIONS] ",
@@ -70,6 +81,18 @@ const cmdList: []const Cmd = &.{
                 .short = "-t",
                 .info = "Specifies the type of history to display. Options include: 'length' and 'area'. The default is 'main'.",
                 .value = .{ .str = @tagName(HistoryType.mian) },
+            },
+            .{
+                .long = "--all",
+                .short = "-a",
+                .info = "Display all the entries.",
+                .value = .{ .bool = false },
+            },
+            .{
+                .long = "--show-id",
+                .short = "-id",
+                .info = "Display Id for the entries.",
+                .value = .{ .bool = false },
             },
             .{
                 .long = "--earlier",
@@ -124,12 +147,20 @@ pub const Cli = struct {
         defer std.process.argsFree(self.alloc, args);
 
         var idx: usize = 1;
-        const cmdEnum = std.meta.stringToEnum(CmdName, args[idx]);
+        const cmdEnum = if (args.len == 1) CmdName.root else std.meta.stringToEnum(CmdName, args[idx]);
         const cmd = self.getCmd(cmdEnum);
+
         self.cmd = cmd;
         if (cmd.name != .root) {
             idx += 1;
         }
+
+        if (args.len < idx + cmd.min_arg) {
+            std.debug.print("\x1b[1;31m[Error]: Insufficient arguments provided.\x1b[0m\n\n", .{});
+            try self.help();
+            std.process.exit(0);
+        }
+
         if (self.cmd.options) |opt| {
             for (opt) |arg| {
                 if (idx < args.len and (std.mem.eql(u8, arg.long, args[idx]) or std.mem.eql(u8, arg.short, args[idx]))) {

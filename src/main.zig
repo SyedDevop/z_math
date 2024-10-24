@@ -13,6 +13,7 @@ const Lexer = lexer.Lexer;
 const Cli = App.Cli;
 const ArgError = App.ArgError;
 const Db = @import("./db/db.zig").DB;
+const Order = @import("./db/sql_query.zig").Order;
 
 const VERSION = "0.1.0";
 const USAGE =
@@ -20,47 +21,14 @@ const USAGE =
     \\------------------
     \\A simple and powerful command-line calculator for evaluating math expressions and performing unit conversions for length and area.
 ;
-const MAIN_OUT_FORMATE =
-    \\The input is :: {s} ::
-    \\Ans: {d}
-;
 const NO_HISTORY_MES =
     \\No history available yet.
     \\Start by running a calculation to save your work.
     \\Use -h or --help for more info.
 ;
 
-fn getConfFile(alloc: std.mem.Allocator) !std.fs.File {
-    if (std.zig.EnvVar.HOME.getPosix()) |home| {
-        const dir_path = try std.fs.path.join(alloc, &.{ home, ".config/z_math" });
-        defer alloc.free(dir_path);
-        const file_path = try std.fs.path.join(alloc, &.{ dir_path, ".zmath" });
-        defer alloc.free(file_path);
-
-        const file = std.fs.cwd().openFile(file_path, .{ .mode = .read_write }) catch |err| switch (err) {
-            error.FileNotFound => brk: {
-                if (std.fs.accessAbsolute(dir_path, .{}) == error.FileNotFound) {
-                    try std.fs.makeDirAbsolute(dir_path);
-                }
-                const file = try std.fs.cwd().createFile(file_path, .{
-                    .read = true,
-                    .truncate = false,
-                });
-                break :brk file;
-            },
-            else => return err,
-        };
-
-        // const stat = try file.stat();
-        // try file.seekTo(stat.size);
-        return file;
-    } else {
-        std.debug.print("config path not found", .{});
-        std.debug.print("Z_Math only supports the POSIX-compliant system.", .{});
-        return ZAppError.exit;
-    }
-}
 pub fn main() !void {
+    const exe_id = std.crypto.random.intRangeAtMost(u64, 1000, 15000);
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
@@ -68,25 +36,11 @@ pub fn main() !void {
     // good idea to pass EXResCode to get extended result codes (more detailed error codes)
     var db = try Db.init(allocator);
     defer db.deinit();
-    // db.addExpr("560 * 10", "5600", "789");
     // db.delExpr(16);
     // db.delRangeExpr(4, 5);
-    const rows = try db.getExprs(.{ .limit = 0 });
-    defer {
-        for (rows) |row| row.destory(allocator);
-        allocator.free(rows);
-    }
-    for (rows) |v| {
-        std.debug.print("Id: {d} input: {s} output {s} expi_id {s} time {s} \n", .{ v.id, v.input, v.output, v.execution_id, v.created_at });
-    }
-    if (0 == 0) return;
 
     var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
     defer cli.deinit();
-
-    const con_file = try getConfFile(allocator);
-    defer con_file.close();
-    const con_stat = try con_file.stat();
 
     cli.parse() catch |e| {
         if (e == ZAppError.exit) return;
@@ -120,14 +74,19 @@ pub fn main() !void {
 
             var eval = Eval.init(&par.ast, allocator);
             defer eval.deinit();
+            const output = try std.fmt.allocPrint(allocator, "{d}", .{try eval.eval()});
+            defer allocator.free(output);
 
-            try con_file.seekTo(con_stat.size);
-
-            const outpust = try std.fmt.allocPrint(allocator, MAIN_OUT_FORMATE, .{ input, try eval.eval() });
-            defer allocator.free(outpust);
-            print("\x1b[32m{s}\x1b[0m", .{outpust});
-            _ = try con_file.writeAll(outpust);
-            _ = try con_file.writeAll("\r\n");
+            db.addExpr(input, output, exe_id);
+            std.debug.print(" \x1b[0;36mThe input is :: {s} ::\x1b[0m\n", .{input});
+            std.debug.print(" \x1b[3;21;32mAns: {s}\x1b[0m\n", .{output});
+            std.debug.print("\n", .{});
+        },
+        .delete => {
+            if (try cli.getBoolArg("--all")) {
+                db.delAllExpr();
+                std.debug.print("All entries have been successfully deleted.\n", .{});
+            }
         },
         .lenght => {
             var c: u8 = 1;
@@ -152,21 +111,37 @@ pub fn main() !void {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
         },
         .history => {
-            const file_size = try con_file.getEndPos();
-            if (file_size == 0) {
+            const is_id = try cli.getBoolArg("-id");
+            const order = if (try cli.getBoolArg("-e")) Order.ASC else Order.DESC;
+            if (try cli.getBoolArg("--all")) {
+                const rows = try db.getAllExprs(order);
+                defer {
+                    for (rows) |row| row.destory(allocator);
+                    allocator.free(rows);
+                }
+                if (rows.len == 0) {
+                    std.debug.print(NO_HISTORY_MES, .{});
+                    return;
+                }
+                for (rows) |v| {
+                    v.printStrExper(is_id);
+                }
+                return;
+            }
+            const limit: u64 = if (try cli.getNumArg("-l")) |l| @intCast(l) else 5;
+            const rows = try db.getExprs(.{ .limit = limit, .order = order });
+            defer {
+                for (rows) |row| row.destory(allocator);
+                allocator.free(rows);
+            }
+            if (rows.len == 0) {
                 std.debug.print(NO_HISTORY_MES, .{});
                 return;
             }
-            const buf = try allocator.alloc(u8, try con_file.getEndPos());
-            defer allocator.free(buf);
-            _ = try con_file.readAll(buf);
-            const is_earlier = try cli.getBoolArg("-e");
-            const limit = try cli.getNumArg("-l");
-            if (is_earlier) {
-                print_earlier_history(buf, limit);
-            } else {
-                print_recent_history(buf, limit);
+            for (rows) |v| {
+                v.printStrExper(is_id);
             }
+
             return;
         },
     }

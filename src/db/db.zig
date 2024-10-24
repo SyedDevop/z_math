@@ -65,17 +65,40 @@ pub const DB = struct {
             std.process.exit(1);
         };
     }
-    pub fn addExpr(self: *Self, input: []const u8, output: []const u8, execut_id: []const u8) void {
+    pub fn addExpr(self: *Self, input: []const u8, output: []const u8, execut_id: u64) void {
         self.conn.exec(sql.add_exper_query, .{ input, output, execut_id }) catch |err| {
             std.debug.print("[ERROR]: getEzprs#conn Code {any}\n", .{err});
             std.debug.print("[ERROR]: getEzprs#conn      {s}\n", .{self.conn.lastError()});
             std.process.exit(1);
         };
     }
+    pub fn getAllExprs(self: *Self, order: sql.Order) ![]Expr {
+        var result = std.ArrayList(Expr).init(self.alloc);
+        var rows = self.conn.rows(try sql.allExpersQuery(order), .{}) catch {
+            std.debug.print("[ERROR]: getAllEzprs#conn {s}\n", .{self.conn.lastError()});
+            std.process.exit(1);
+        };
 
+        defer rows.deinit();
+        if (rows.err) |err| {
+            std.debug.print("[ERROR]: getEzprs#rows {any}", .{err});
+            std.process.exit(1);
+        }
+        while (rows.next()) |row| {
+            const v = Expr{
+                .id = row.int(0),
+                .input = try self.alloc.dupe(u8, row.text(1)),
+                .output = try self.alloc.dupe(u8, row.text(2)),
+                .execution_id = try self.alloc.dupe(u8, row.text(3)),
+                .created_at = try self.alloc.dupe(u8, row.text(4)),
+            };
+            try result.append(v);
+        }
+        return try result.toOwnedSlice();
+    }
     /// Default Options for [getEzprs]
     /// Options
-    ///  limit: u8 = 5,
+    ///  limit: u64 = 5,
     ///  order: Order = .DESC,
     pub fn getExprs(self: *Self, opt: sql.Options) ![]Expr {
         var result = std.ArrayList(Expr).init(self.alloc);
