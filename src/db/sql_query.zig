@@ -15,5 +15,17 @@ pub const create_expression_table_query =
 ;
 
 pub const index_expression_query = "CREATE INDEX IF NOT EXISTS idx_execution_id ON Expressions (execution_id);";
+pub const Order = enum { DESC, ASC };
+pub const Options = struct {
+    limit: u8 = 5,
+    order: Order = .DESC,
+};
+pub fn expersQuery(opt: Options) ![]const u8 {
+    return try std.fmt.bufPrint(&buf, "SELECT * FROM (SELECT * FROM Expressions ORDER BY id {s} LIMIT {d} ) ORDER BY id;", .{ @tagName(opt.order), opt.limit });
+}
 
-pub const all_exper_query = "SELECT * FROM (SELECT * FROM Expressions ORDER BY id DESC LIMIT ?1 ) ORDER BY id;";
+pub const add_exper_query = "INSERT INTO Expressions (input, output, execution_id) VALUES (?1, ?2, ?3);";
+
+pub const del_exper_query = "DELETE FROM Expressions WHERE id = ?1;";
+pub const del_all_exper_query = "DELETE FROM Expressions;";
+pub const del_range_exper_query = "DELETE FROM Expressions WHERE id BETWEEN ?1 AND ?2;";

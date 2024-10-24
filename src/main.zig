@@ -68,7 +68,10 @@ pub fn main() !void {
     // good idea to pass EXResCode to get extended result codes (more detailed error codes)
     var db = try Db.init(allocator);
     defer db.deinit();
-    const rows = try db.getAllEzprs(3);
+    // db.addExpr("560 * 10", "5600", "789");
+    // db.delExpr(16);
+    // db.delRangeExpr(4, 5);
+    const rows = try db.getExprs(.{ .limit = 0 });
     defer {
         for (rows) |row| row.destory(allocator);
         allocator.free(rows);

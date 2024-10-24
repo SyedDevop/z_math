@@ -5,6 +5,7 @@ const ZAppErrors = @import("../errors.zig").ZAppErrors;
 const Allocator = std.mem.Allocator;
 const sql = @import("./sql_query.zig");
 const Expr = @import("./expr.zig").Expr;
+const assert = @import("../assert/assert.zig");
 
 const HOME_ENV = "HOME";
 
@@ -16,6 +17,7 @@ pub fn getDbPath(alloc: Allocator) ![:0]u8 {
     std.debug.print("Z_Math only supports the POSIX-compliant system.\n", .{});
     std.process.exit(1);
 }
+
 pub const DB = struct {
     const Self = @This();
 
@@ -40,10 +42,53 @@ pub const DB = struct {
         self.alloc.free(self.path);
     }
 
-    pub fn getAllEzprs(self: *Self, limit: u8) ![]Expr {
+    pub fn delExpr(self: *Self, id: u64) void {
+        self.conn.exec(sql.del_exper_query, .{id}) catch |err| {
+            std.debug.print("[ERROR]: delEzprs#conn Code {any}\n", .{err});
+            std.debug.print("[ERROR]: delEzprs#conn      {s}\n", .{self.conn.lastError()});
+            std.process.exit(1);
+        };
+    }
+    pub fn delRangeExpr(self: *Self, from: u64, to: u64) void {
+        assert.assert(from != 0, "DB::delRangeEzprs from cant be 0");
+        assert.assert(from < to, "DB::delRangeEzprs From value needs to be grater then To");
+        self.conn.exec(sql.del_range_exper_query, .{ from, to }) catch |err| {
+            std.debug.print("[ERROR]: delRangeEzprs#conn Code {any}\n", .{err});
+            std.debug.print("[ERROR]: delRangeEzprs#conn      {s}\n", .{self.conn.lastError()});
+            std.process.exit(1);
+        };
+    }
+    pub fn delAllExpr(self: *Self) void {
+        self.conn.exec(sql.del_all_exper_query, .{}) catch |err| {
+            std.debug.print("[ERROR]: delAllEzprs#conn Code {any}\n", .{err});
+            std.debug.print("[ERROR]: delAllEzprs#conn      {s}\n", .{self.conn.lastError()});
+            std.process.exit(1);
+        };
+    }
+    pub fn addExpr(self: *Self, input: []const u8, output: []const u8, execut_id: []const u8) void {
+        self.conn.exec(sql.add_exper_query, .{ input, output, execut_id }) catch |err| {
+            std.debug.print("[ERROR]: getEzprs#conn Code {any}\n", .{err});
+            std.debug.print("[ERROR]: getEzprs#conn      {s}\n", .{self.conn.lastError()});
+            std.process.exit(1);
+        };
+    }
+
+    /// Default Options for [getEzprs]
+    /// Options
+    ///  limit: u8 = 5,
+    ///  order: Order = .DESC,
+    pub fn getExprs(self: *Self, opt: sql.Options) ![]Expr {
         var result = std.ArrayList(Expr).init(self.alloc);
-        var rows = try self.conn.rows(sql.all_exper_query, .{limit});
+        var rows = self.conn.rows(try sql.expersQuery(opt), .{}) catch {
+            std.debug.print("[ERROR]: getEzprs#conn {s}\n", .{self.conn.lastError()});
+            std.process.exit(1);
+        };
+
         defer rows.deinit();
+        if (rows.err) |err| {
+            std.debug.print("[ERROR]: getEzprs#rows {any}", .{err});
+            std.process.exit(1);
+        }
         while (rows.next()) |row| {
             const v = Expr{
                 .id = row.int(0),
