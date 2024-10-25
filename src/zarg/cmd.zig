@@ -26,12 +26,20 @@ pub const ArgValue = union(enum) {
     str: ?[]const u8,
     bool: ?bool,
     num: ?i32,
+
+    pub fn free(self: *ArgValue, allocator: Allocator) !void {
+        switch (self.*) {
+            .str => |str| if (str) |s| allocator.free(s),
+            else => {},
+        }
+    }
 };
 pub const Arg = struct {
     long: []const u8,
     short: []const u8,
     info: []const u8,
     value: ArgValue,
+    is_alloc: bool = false,
 };
 pub const ArgError = error{};
 
@@ -77,14 +85,23 @@ const cmdList: []const Cmd = &.{
     },
     .{
         .name = .delete,
+        .min_arg = 0,
         .usage = "m delete [ID] [OPTIONS]",
         .info = "This command delete the expressions for given [ID].",
-        .options = &.{.{
-            .long = "--all",
-            .short = "-a",
-            .info = "Delete all the entries.",
-            .value = .{ .bool = false },
-        }},
+        .options = &.{
+            .{
+                .long = "--all",
+                .short = "-a",
+                .info = "Delete all the entries.",
+                .value = .{ .bool = false },
+            },
+            .{
+                .long = "--range",
+                .short = "-r",
+                .info = "Delete range of the entries. |uasge: 10..15 |",
+                .value = .{ .str = "1..2" },
+            },
+        },
     },
     .{
         .name = .history,
@@ -195,15 +212,18 @@ pub const Cli = struct {
                         },
                         .str => {
                             if (idx + 1 >= args.len) {
-                                std.debug.panic("Error: value reqaired after '{s}'", .{args[idx]});
+                                std.debug.print("Error: value reqaired after '{s}'", .{args[idx]});
+                                std.process.exit(1);
                             }
                             idx += 1;
-                            copy_arg.value = .{ .str = args[idx] };
+                            copy_arg.is_alloc = true;
+                            copy_arg.value = .{ .str = try self.alloc.dupe(u8, args[idx]) };
                             try self.computed_args.append(copy_arg);
                         },
                         .num => {
                             if (idx + 1 >= args.len) {
-                                std.debug.panic("Error: value reqaired after '{s}'", .{args[idx]});
+                                std.debug.print("Error: value reqaired after '{s}'", .{args[idx]});
+                                std.process.exit(1);
                             }
                             idx += 1;
                             const num = std.fmt.parseInt(i32, args[idx], 10) catch |e| switch (e) {
@@ -245,12 +265,24 @@ pub const Cli = struct {
         self.data = try argList.toOwnedSlice();
     }
 
-    pub fn getCmd(self: Self, cmd: ?CmdName) Cmd {
+    fn getCmd(self: Self, cmd: ?CmdName) Cmd {
         if (cmd == null) return self.rootCmd;
         for (self.subCmds) |value| {
             if (value.name == cmd) return value;
         }
         return self.rootCmd;
+    }
+
+    pub fn getStrArg(self: Self, arg_name: []const u8) !?[]const u8 {
+        for (self.computed_args.items) |arg| {
+            if (std.mem.eql(u8, arg.long, arg_name) or std.mem.eql(u8, arg.short, arg_name)) {
+                if (arg.value != .str) {
+                    return error.ArgIsNotStr;
+                }
+                return arg.value.str;
+            }
+        }
+        return null;
     }
 
     pub fn getNumArg(self: Self, arg_name: []const u8) !?i32 {
@@ -322,6 +354,7 @@ pub const Cli = struct {
         }
     }
     pub fn deinit(self: *Self) void {
+        for (self.computed_args.items) |*item| if (item.is_alloc) try item.value.free(self.alloc);
         self.computed_args.deinit();
         self.alloc.free(self.data);
         self.alloc.free(self.errorMess);

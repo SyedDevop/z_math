@@ -1,21 +1,22 @@
 const std = @import("std");
-const lexer = @import("./lexer.zig");
-const parser = @import("./parser.zig");
+
 const evalStruct = @import("eval.zig");
-const cmds = @import("./zarg/cmd.zig");
-
-const Token = @import("./token.zig").Token;
 const ZAppError = @import("./errors.zig").ZAppErrors;
-const print = std.debug.print;
-const Parser = parser.Parser;
-const Eval = evalStruct.Eval;
-const Lexer = lexer.Lexer;
-const Cmd = cmds.Cli;
-const ArgError = cmds.ArgError;
-const Db = @import("./db/db.zig").DB;
+const assert = @import("./assert/assert.zig").assert;
+const parser = @import("./parser.zig");
+const lexer = @import("./lexer.zig");
 const Order = @import("./db/sql_query.zig").Order;
+const Token = @import("./token.zig").Token;
+const cmds = @import("./zarg/cmd.zig");
+const Db = @import("./db/db.zig").DB;
 
-const VERSION = "0.2.1";
+const Parser = parser.Parser;
+const print = std.debug.print;
+const Lexer = lexer.Lexer;
+const Eval = evalStruct.Eval;
+const Cmd = cmds.Cli;
+
+const VERSION = "0.2.2";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -89,6 +90,24 @@ pub fn main() !void {
             std.debug.print("\n", .{});
         },
         .delete => {
+            if (try cmd.getStrArg("--range")) |range| {
+                var ranges = std.mem.splitSequence(u8, range, "..");
+                const from: u64 = if (ranges.next()) |n| std.fmt.parseUnsigned(u64, n, 10) catch |e| switch (e) {
+                    error.InvalidCharacter => 0,
+                    else => return e,
+                } else 0;
+                const to: u64 = if (ranges.next()) |n| std.fmt.parseUnsigned(u64, n, 10) catch |e| switch (e) {
+                    error.InvalidCharacter => 0,
+                    else => return e,
+                } else 0;
+                if (from == 0 or to == 0) {
+                    std.debug.print("[Error] From Or to cant be 0. This could happen if letter or symbols are provided.", .{});
+                    std.process.exit(1);
+                }
+
+                db.delRangeExpr(from, to);
+                std.debug.print("Deleted entries {d}..{d} ", .{ from, to });
+            }
             if (try cmd.getBoolArg("--all")) {
                 db.delAllExpr();
                 std.debug.print("All entries have been successfully deleted.\n", .{});
