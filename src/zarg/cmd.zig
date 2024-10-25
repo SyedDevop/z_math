@@ -99,7 +99,7 @@ const cmdList: []const Cmd = &.{
                 .long = "--range",
                 .short = "-r",
                 .info = "Delete range of the entries. |uasge: 10..15 |",
-                .value = .{ .str = "1..2" },
+                .value = .{ .str = null },
             },
         },
     },
