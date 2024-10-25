@@ -2,20 +2,20 @@ const std = @import("std");
 const lexer = @import("./lexer.zig");
 const parser = @import("./parser.zig");
 const evalStruct = @import("eval.zig");
+const cmds = @import("./zarg/cmd.zig");
 
 const Token = @import("./token.zig").Token;
-const App = @import("./cli.zig");
 const ZAppError = @import("./errors.zig").ZAppErrors;
 const print = std.debug.print;
 const Parser = parser.Parser;
 const Eval = evalStruct.Eval;
 const Lexer = lexer.Lexer;
-const Cli = App.Cli;
-const ArgError = App.ArgError;
+const Cmd = cmds.Cli;
+const ArgError = cmds.ArgError;
 const Db = @import("./db/db.zig").DB;
 const Order = @import("./db/sql_query.zig").Order;
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -52,39 +52,22 @@ const AUTOCOMPLETION =
 
 pub fn main() !void {
     const exe_id = std.crypto.random.intRangeAtMost(u64, 1000, 15000);
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
-    // good idea to pass EXResCode to get extended result codes (more detailed error codes)
     var db = try Db.init(allocator);
     defer db.deinit();
-    // db.delExpr(16);
-    // db.delRangeExpr(4, 5);
 
-    var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
-    defer cli.deinit();
+    var cmd = try Cmd.init(allocator, "Z Math", USAGE, VERSION);
+    defer cmd.deinit();
+    try cmd.parse();
 
-    cli.parse() catch |e| {
-        if (e == ZAppError.exit) return;
-        if (e == ArgError.ArgValueNotGiven) {
-            std.debug.print("{s}", .{cli.errorMess});
-            return;
-        }
-        return e;
-    };
-
-    const input = cli.data;
-
-    // if (input.len <= 1) {
-    //     print("\x1b[32mThe input is :: {s} ::\n\x1b[0m", .{input});
-    //     std.debug.print("\x1b[33mWaring: The expression provided is too short. Please provide a longer or more detailed expression\x1b[0m\n", .{});
-    //     return;
-    // }
-
+    const input = cmd.data;
     var lex = Lexer.init(input, allocator);
 
-    switch (cli.cmd.name) {
+    switch (cmd.cmd.name) {
         .root => {
             var par = try Parser.init(input, &lex, allocator);
             defer par.deinit();
@@ -106,7 +89,7 @@ pub fn main() !void {
             std.debug.print("\n", .{});
         },
         .delete => {
-            if (try cli.getBoolArg("--all")) {
+            if (try cmd.getBoolArg("--all")) {
                 db.delAllExpr();
                 std.debug.print("All entries have been successfully deleted.\n", .{});
             }
@@ -134,9 +117,9 @@ pub fn main() !void {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
         },
         .history => {
-            const is_id = try cli.getBoolArg("-id");
-            const order = if (try cli.getBoolArg("-e")) Order.ASC else Order.DESC;
-            if (try cli.getBoolArg("--all")) {
+            const is_id = try cmd.getBoolArg("-id");
+            const order = if (try cmd.getBoolArg("-e")) Order.ASC else Order.DESC;
+            if (try cmd.getBoolArg("--all")) {
                 const rows = try db.getAllExprs(order);
                 defer {
                     for (rows) |row| row.destory(allocator);
@@ -151,7 +134,7 @@ pub fn main() !void {
                 }
                 return;
             }
-            const limit: u64 = if (try cli.getNumArg("-l")) |l| @intCast(l) else 5;
+            const limit: u64 = if (try cmd.getNumArg("-l")) |l| @intCast(l) else 5;
             const rows = try db.getExprs(.{ .limit = limit, .order = order });
             defer {
                 for (rows) |row| row.destory(allocator);
@@ -168,50 +151,13 @@ pub fn main() !void {
             return;
         },
         .completion => {
-            const opts = try App.CmdName.getCmdNameList(allocator);
+            const opts = try cmds.CmdName.getCmdNameList(allocator);
             defer allocator.free(opts);
             std.debug.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
         },
     }
 }
 
-fn print_recent_history(buf: []const u8, limit: ?i32) void {
-    var i: usize = buf.len - 3;
-    var point: usize = buf.len - 1;
-    var count: ?i32 = limit;
-    while (i > 0) : (i -= 1) {
-        if (i > 0) {
-            if (count != null and count == 0) break;
-            if (i == 1) {
-                std.debug.print("\n{s}\n", .{buf[i - 1 .. point]});
-            }
-            if (buf[i] == '\n' and buf[i - 1] == '\r') {
-                std.debug.print("{s}\n", .{buf[i..point]});
-                point = i;
-                if (count) |c| {
-                    count = c - 1;
-                }
-            }
-        }
-    }
-}
-fn print_earlier_history(buf: []const u8, limit: ?i32) void {
-    var i: usize = 0;
-    var point: usize = 0;
-    var count: ?i32 = limit;
-    while (i < buf.len) : (i += 1) {
-        if (buf.len > i) {
-            if (count != null and count == 0) break;
-            if (buf[i] == '\r' and buf[i + 1] == '\n') {
-                std.debug.print("{s}\n", .{buf[point..i]});
-                point = i;
-                if (count) |c| {
-                    count = c - 1;
-                }
-            }
-        }
-    }
-}
 const ex = std.testing.expectEqualDeep;
 test "Lexer" {
     var lex = Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3", std.testing.allocator);

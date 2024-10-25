@@ -1,8 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const ZAppError = @import("./errors.zig").ZAppErrors;
-
 pub const CmdName = enum {
     root,
     length,
@@ -35,7 +33,7 @@ pub const Arg = struct {
     info: []const u8,
     value: ArgValue,
 };
-pub const ArgError = error{ArgValueNotGiven};
+pub const ArgError = error{};
 
 pub const ArgsList = std.ArrayList(Arg);
 
@@ -141,13 +139,13 @@ pub const Cli = struct {
 
     name: []const u8,
     description: ?[]const u8 = null,
-    process_name: []const u8,
+    process_name: []const u8 = "",
 
     computed_args: ArgsList,
     subCmds: []const Cmd,
     rootCmd: Cmd,
     cmd: Cmd,
-    data: []const u8,
+    data: []const u8 = "",
 
     version: []const u8,
 
@@ -163,8 +161,6 @@ pub const Cli = struct {
             .cmd = rootCmd,
             .version = version,
             .computed_args = ArgsList.init(allocate),
-            .data = "",
-            .process_name = "",
             .errorMess = try allocate.alloc(u8, 255),
         };
     }
@@ -182,7 +178,6 @@ pub const Cli = struct {
         if (cmd.name != .root) {
             idx += 1;
         }
-
         if (args.len < idx + cmd.min_arg) {
             std.debug.print("\x1b[1;31m[Error]: Insufficient arguments provided.\x1b[0m\n\n", .{});
             try self.help();
@@ -200,8 +195,7 @@ pub const Cli = struct {
                         },
                         .str => {
                             if (idx + 1 >= args.len) {
-                                _ = try std.fmt.bufPrint(self.errorMess, "Error: value reqaired after '{s}'", .{args[idx]});
-                                return ArgError.ArgValueNotGiven;
+                                std.debug.panic("Error: value reqaired after '{s}'", .{args[idx]});
                             }
                             idx += 1;
                             copy_arg.value = .{ .str = args[idx] };
@@ -209,8 +203,7 @@ pub const Cli = struct {
                         },
                         .num => {
                             if (idx + 1 >= args.len) {
-                                _ = try std.fmt.bufPrint(self.errorMess, "Error: value reqaired after '{s}'", .{args[idx]});
-                                return ArgError.ArgValueNotGiven;
+                                std.debug.panic("Error: value reqaired after '{s}'", .{args[idx]});
                             }
                             idx += 1;
                             const num = std.fmt.parseInt(i32, args[idx], 10) catch |e| switch (e) {
@@ -237,10 +230,10 @@ pub const Cli = struct {
         if (idx >= args.len) return;
         if (isHelpOption(args[idx])) {
             try self.help();
-            return ZAppError.exit;
+            std.process.exit(0);
         } else if (isVersionOption(args[idx])) {
             std.debug.print("Z Math {s}", .{self.version});
-            return ZAppError.exit;
+            std.process.exit(0);
         }
 
         var argList = std.ArrayList(u8).init(self.alloc);

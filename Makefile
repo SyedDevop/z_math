@@ -1,3 +1,6 @@
+run:
+	zig build run
+
 copyIns:install
 	cp -v ./zig-out/bin/m ~/.local/bin/
 
