@@ -16,7 +16,7 @@ const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
 const Cmd = cmds.Cli;
 
-const VERSION = "0.2.2+1";
+const VERSION = "0.2.3";
 const USAGE =
     \\CLI Calculator App
     \\------------------

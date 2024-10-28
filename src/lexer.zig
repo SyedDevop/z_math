@@ -107,7 +107,7 @@ pub const Lexer = struct {
     }
     fn readNum(self: *Self) []const u8 {
         const startPos = self.position;
-        while (isNum(self.ch)) {
+        while (isNum(self.ch) or self.ch == '.' or self.ch == '_') {
             self.readChar();
         }
         return self.input[startPos..self.position];
