@@ -1,6 +1,5 @@
 const std = @import("std");
 const lexer = @import("./lexer.zig");
-const pretty = @import("pretty");
 const Ast = @import("./ast.zig");
 const ass = std.zig.Ast;
 const Token = @import("./token.zig").Token;

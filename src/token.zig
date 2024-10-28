@@ -16,12 +16,7 @@ pub const Token = union(enum) {
     // negate: u8,
     // id: u8,
 
-    mm,
-    cm,
-    m,
-    km,
-    in,
-    ft,
+    word: []const u8,
 
     colon,
     lparen,
@@ -36,26 +31,12 @@ pub const Token = union(enum) {
     not_equal,
 
     eof,
-    pub fn get_unit(tok: Token) f16 {
-        return switch (tok) {
-            .mm => 3,
-            .cm => 2,
-            .m => 1,
-            .km => -3,
-            else => 0,
-        };
-    }
+
     pub fn keyword(key: []const u8) ?Token {
         const map = std.StaticStringMap(Token).initComptime(.{
             .{ "tan", .{ .function = "tan" } },
             .{ "sine", .{ .function = "sine" } },
             .{ "cost", .{ .function = "cost" } },
-            .{ "mm", .mm },
-            .{ "cm", .cm },
-            .{ "m", .m },
-            .{ "km", .km },
-            .{ "ft", .ft },
-            .{ "in", .in },
         });
         return map.get(key);
     }

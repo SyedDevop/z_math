@@ -54,6 +54,7 @@ pub fn isVersionOption(opt: []const u8) bool {
 pub const Cmd = struct {
     name: CmdName,
     usage: []const u8,
+    example: ?[]const u8 = null,
     info: ?[]const u8 = null,
     min_arg: u8 = 1,
     options: ?[]const Arg = null,
@@ -74,8 +75,26 @@ const cmdList: []const Cmd = &.{
     .{
         .name = .length,
         .usage = "m lenght [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
+        .example =
+        \\Examples of Usage:
+        \\    m length "mm:1:m"   - Converts 1 millimeter to meters.
+        \\    m length "mm?1?m"   - Converts 1 millimeter to meters (with ? as a separator).
+        \\    m length "mm 1 m"   - Converts 1 millimeter to meters.
+        \\    m length "1 mm m"   - Converts 1 millimeter to meters.
+        \\
+        \\Notes:
+        \\  - This command accepts any separator other than numbers or letters between units and values.
+        \\  - The first unit specified is considered the starting unit (FROM_UNIT), and the last unit is the target (TO_UNIT).
+        ,
         .info = "This command convert values between different units of length.",
-        .options = null,
+        .options = &.{
+            .{
+                .long = "--unit",
+                .short = "-u",
+                .info = "Displays all the units lenght support.",
+                .value = .{ .bool = null },
+            },
+        },
     },
     .{
         .name = .area,
@@ -321,6 +340,10 @@ pub const Cli = struct {
         const cmd_opt = self.cmd;
         try stdout.print("USAGE: \n", .{});
         try stdout.print("  {s}\n\n", .{cmd_opt.usage});
+        if (cmd_opt.example) |ex| {
+            try stdout.print("EXAMPLE: \n", .{});
+            try stdout.print("  {s}\n\n", .{ex});
+        }
         try stdout.print("OPTIONS: \n", .{});
         if (cmd_opt.options) |opt| {
             for (opt) |value| {

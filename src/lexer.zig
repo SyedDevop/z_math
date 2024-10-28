@@ -61,17 +61,12 @@ pub const Lexer = struct {
             },
             0 => .eof,
             'a'...'z', 'A'...'Z' => blk: {
-                const cur_pos = self.position;
+                // const cur_pos = self.position;
                 const ident = self.readIdentifier();
                 if (Token.keyword(ident)) |token| {
                     return token;
                 }
-                break :blk .{
-                    .illegal = .{
-                        .st_pos = cur_pos,
-                        .en_pos = self.position,
-                    },
-                };
+                break :blk .{ .word = ident };
             },
             '0'...'9' => {
                 const num = self.readNum();

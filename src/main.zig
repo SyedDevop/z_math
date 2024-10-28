@@ -4,6 +4,7 @@ const evalStruct = @import("eval.zig");
 const ZAppError = @import("./errors.zig").ZAppErrors;
 const assert = @import("./assert/assert.zig").assert;
 const parser = @import("./parser.zig");
+const Length = @import("./unit/length.zig");
 const lexer = @import("./lexer.zig");
 const Order = @import("./db/sql_query.zig").Order;
 const Token = @import("./token.zig").Token;
@@ -16,7 +17,7 @@ const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
 const Cmd = cmds.Cli;
 
-const VERSION = "0.2.3";
+const VERSION = "0.2.9";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -70,6 +71,7 @@ pub fn main() !void {
 
     switch (cmd.cmd.name) {
         .root => {
+            // FIX: error out on words,
             var par = try Parser.init(input, &lex, allocator);
             defer par.deinit();
             try par.parse();
@@ -114,23 +116,13 @@ pub fn main() !void {
             }
         },
         .length => {
-            var c: u8 = 1;
-            var from: f16 = 0;
-            var to: f16 = 0;
-            var val: f64 = 0;
-            while (lex.hasTokes()) {
-                const tok = try lex.nextToke();
-
-                if (c == 1) {
-                    from = Token.get_unit(tok) * -1;
-                } else if (c == 3) {
-                    val = 100;
-                } else if (c == 5) {
-                    to = Token.get_unit(tok) * -1;
-                }
-                c += 1;
+            if (try cmd.getBoolArg("-u")) {
+                Length.printUnits();
+                return;
             }
-            std.debug.print("val{d} from{d}, to{d} = {d}", .{ val, from, to, std.math.pow(f64, val, from) * to });
+            var lenght = Length.init(input, &lex);
+            const out = try lenght.calculateLenght();
+            _ = out;
         },
         .area => {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
