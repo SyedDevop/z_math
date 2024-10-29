@@ -6,6 +6,7 @@ pub const Expr = struct {
     id: i64,
     input: []const u8,
     output: []const u8,
+    op_type: []const u8,
     execution_id: []const u8,
     created_at: []const u8,
 
@@ -19,6 +20,7 @@ pub const Expr = struct {
     pub fn destory(self: Self, alloc: std.mem.Allocator) void {
         alloc.free(self.input);
         alloc.free(self.output);
+        alloc.free(self.op_type);
         alloc.free(self.execution_id);
         alloc.free(self.created_at);
     }

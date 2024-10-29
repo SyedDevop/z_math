@@ -65,8 +65,8 @@ pub const DB = struct {
             std.process.exit(1);
         };
     }
-    pub fn addExpr(self: *Self, input: []const u8, output: []const u8, execut_id: u64) void {
-        self.conn.exec(sql.add_exper_query, .{ input, output, execut_id }) catch |err| {
+    pub fn addExpr(self: *Self, input: []const u8, output: []const u8, op_type: []const u8, execut_id: u64) void {
+        self.conn.exec(sql.add_exper_query, .{ input, output, op_type, execut_id }) catch |err| {
             std.debug.print("[ERROR]: getEzprs#conn Code {any}\n", .{err});
             std.debug.print("[ERROR]: getEzprs#conn      {s}\n", .{self.conn.lastError()});
             std.process.exit(1);
@@ -89,8 +89,9 @@ pub const DB = struct {
                 .id = row.int(0),
                 .input = try self.alloc.dupe(u8, row.text(1)),
                 .output = try self.alloc.dupe(u8, row.text(2)),
-                .execution_id = try self.alloc.dupe(u8, row.text(3)),
-                .created_at = try self.alloc.dupe(u8, row.text(4)),
+                .op_type = try self.alloc.dupe(u8, row.text(3)),
+                .execution_id = try self.alloc.dupe(u8, row.text(4)),
+                .created_at = try self.alloc.dupe(u8, row.text(5)),
             };
             try result.append(v);
         }
@@ -117,8 +118,9 @@ pub const DB = struct {
                 .id = row.int(0),
                 .input = try self.alloc.dupe(u8, row.text(1)),
                 .output = try self.alloc.dupe(u8, row.text(2)),
-                .execution_id = try self.alloc.dupe(u8, row.text(3)),
-                .created_at = try self.alloc.dupe(u8, row.text(4)),
+                .op_type = try self.alloc.dupe(u8, row.text(3)),
+                .execution_id = try self.alloc.dupe(u8, row.text(4)),
+                .created_at = try self.alloc.dupe(u8, row.text(5)),
             };
             try result.append(v);
         }

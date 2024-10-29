@@ -17,7 +17,7 @@ const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
 const Cmd = cmds.Cli;
 
-const VERSION = "0.2.9";
+const VERSION = "0.3.0";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -86,7 +86,7 @@ pub fn main() !void {
             const output = try std.fmt.allocPrint(allocator, "{d}", .{try eval.eval()});
             defer allocator.free(output);
 
-            db.addExpr(input, output, exe_id);
+            db.addExpr(input, output, "root", exe_id);
             std.debug.print(" \x1b[0;36mThe input is :: {s} ::\x1b[0m\n", .{input});
             std.debug.print(" \x1b[3;21;32mAns: {s}\x1b[0m\n", .{output});
             std.debug.print("\n", .{});
@@ -122,7 +122,9 @@ pub fn main() !void {
             }
             var lenght = Length.init(input, &lex);
             const out = try lenght.calculateLenght();
-            _ = out;
+            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, lenght.to.?.name });
+            defer allocator.free(output);
+            db.addExpr(input, output, "length", exe_id);
         },
         .area => {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
