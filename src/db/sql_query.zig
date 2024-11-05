@@ -16,6 +16,8 @@ pub const create_expression_table_query =
 ;
 
 pub const index_expression_query = "CREATE INDEX IF NOT EXISTS idx_execution_id ON Expressions (execution_id);";
+pub const index_op_type_query = "CREATE INDEX IF NOT EXISTS idx_op_type ON Expressions (op_type);";
+
 pub const Order = enum { DESC, ASC };
 pub const Options = struct {
     limit: u64 = 5,
@@ -27,7 +29,9 @@ pub fn allExpersQuery(order: Order) ![]const u8 {
 pub fn expersQuery(opt: Options) ![]const u8 {
     return try std.fmt.bufPrint(&buf, "SELECT * FROM (SELECT * FROM Expressions ORDER BY id {s} LIMIT {d} ) ORDER BY id;", .{ @tagName(opt.order), opt.limit });
 }
-
+pub fn expersQueryWhere(opt: Options, where: []const u8) ![]const u8 {
+    return try std.fmt.bufPrint(&buf, "SELECT * FROM (SELECT * FROM Expressions WHERE op_type = {s} ORDER BY id {s} LIMIT {d} ) ORDER BY id;", .{ where, @tagName(opt.order), opt.limit });
+}
 pub const add_exper_query = "INSERT INTO Expressions (input, output, op_type ,execution_id) VALUES (?1, ?2, ?3, ?4);";
 
 pub const del_exper_query = "DELETE FROM Expressions WHERE id = ?1;";

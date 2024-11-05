@@ -10,6 +10,7 @@ const Order = @import("./db/sql_query.zig").Order;
 const Token = @import("./token.zig").Token;
 const cmds = @import("./zarg/cmd.zig");
 const Db = @import("./db/db.zig").DB;
+const utils = @import("./utils.zig");
 
 const Parser = parser.Parser;
 const print = std.debug.print;
@@ -94,14 +95,8 @@ pub fn main() !void {
         .delete => {
             if (try cmd.getStrArg("--range")) |range| {
                 var ranges = std.mem.splitSequence(u8, range, "..");
-                const from: u64 = if (ranges.next()) |n| std.fmt.parseUnsigned(u64, n, 10) catch |e| switch (e) {
-                    error.InvalidCharacter => 0,
-                    else => return e,
-                } else 0;
-                const to: u64 = if (ranges.next()) |n| std.fmt.parseUnsigned(u64, n, 10) catch |e| switch (e) {
-                    error.InvalidCharacter => 0,
-                    else => return e,
-                } else 0;
+                const from: u64 = try utils.parseUintBase10(u64, ranges.next());
+                const to: u64 = try utils.parseUintBase10(u64, ranges.next());
                 if (from == 0 or to == 0) {
                     std.debug.print("[Error] From Or to cant be 0. This could happen if letter or symbols are provided.", .{});
                     std.process.exit(1);

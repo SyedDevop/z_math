@@ -134,5 +134,6 @@ pub const DB = struct {
             std.process.exit(1);
         };
         try conn.execNoArgs(sql.index_expression_query);
+        try conn.execNoArgs(sql.index_op_type_query);
     }
 };

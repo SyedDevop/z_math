@@ -131,8 +131,8 @@ const cmdList: []const Cmd = &.{
             .{
                 .long = "--type",
                 .short = "-t",
-                .info = "Specifies the type of history to display. Options include: 'length' and 'area'. The default is 'main'.",
-                .value = .{ .str = @tagName(HistoryType.mian) },
+                .info = "Specifies the type of history to display. Options include: 'main', 'length' and 'area'. The default is . all",
+                .value = .{ .str = null },
             },
             .{
                 .long = "--all",
