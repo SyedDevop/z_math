@@ -16,7 +16,9 @@ units directly from the terminal.
   - [Supported Units](#supported-units)
     - [Length](#length)
     - [Area](#area)
+  - [Bash Auto Completion](#bash-auto-completion)
   - [TODO](#todo)
+  - [REF](#ref)
   <!--toc:end-->
 
 ## Features
@@ -86,6 +88,13 @@ Ans: 0.01 sqkm
 - Square kilometers (sqkm)
 - Acres
 - Hectares
+
+## Bash Auto Completion
+
+```console
+$ m completion &> ./zig-out/comp_m
+$ sudo cp -v  ./zig-out/comp_m /usr/share/bash-completion/completions/m
+```
 
 ## TODO
 
