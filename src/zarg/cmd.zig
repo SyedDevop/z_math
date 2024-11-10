@@ -9,6 +9,7 @@ pub const CmdName = enum {
     delete,
     completion,
     volume,
+    temp,
 
     pub fn getCmdNameList(alloc: Allocator) ![]const u8 {
         var result = std.ArrayList(u8).init(alloc);
@@ -106,6 +107,24 @@ const cmdList: []const Cmd = &.{
         \\  - The first unit specified is considered the starting unit (FROM_UNIT), and the last unit is the target (TO_UNIT).
         ,
         .info = "This command convert values between different units of volume.",
+        .options = &.{
+            .{
+                .long = "--unit",
+                .short = "-u",
+                .info = "Displays all the support units.",
+                .value = .{ .bool = null },
+            },
+        },
+    },
+    .{
+        .name = .temp,
+        .usage = "m temp [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
+        .example =
+        \\Notes:
+        \\  - This command accepts any separator other than numbers or letters between units and values.
+        \\  - The first unit specified is considered the starting unit (FROM_UNIT), and the last unit is the target (TO_UNIT).
+        ,
+        .info = "This command convert values between different units of Temperature.",
         .options = &.{
             .{
                 .long = "--unit",

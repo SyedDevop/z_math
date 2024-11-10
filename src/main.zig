@@ -19,8 +19,9 @@ const Cmd = cmds.Cli;
 
 const Length = @import("./unit/length.zig");
 const Volume = @import("./unit/volume.zig");
+const Tempe = @import("./unit/temp.zig");
 
-const VERSION = "0.4.0";
+const VERSION = "0.5.0";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -131,6 +132,17 @@ pub fn main() !void {
             var volume = Volume.init(input, &lex);
             const out = try volume.calculate();
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, volume.to.?.name });
+            defer allocator.free(output);
+            db.addExpr(input, output, @tagName(cmd.cmd.name), exe_id);
+        },
+        .temp => {
+            if (try cmd.getBoolArg("-u")) {
+                Tempe.printUnits();
+                return;
+            }
+            var tempe = Tempe.init(input, &lex);
+            const out = try tempe.calculate();
+            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, @tagName(tempe.to.?.name) });
             defer allocator.free(output);
             db.addExpr(input, output, @tagName(cmd.cmd.name), exe_id);
         },
