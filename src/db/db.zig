@@ -7,15 +7,24 @@ const sql = @import("./sql_query.zig");
 const Expr = @import("./expr.zig").Expr;
 const assert = @import("../assert/assert.zig");
 
-const HOME_ENV = "HOME";
+const builtin = @import("builtin");
+const native_os = builtin.os.tag;
+
+const HOME_ENV_L = "HOME";
+const HOME_ENV_W = "LOCALAPPDATA";
 
 pub fn getDbPath(alloc: Allocator) ![:0]u8 {
-    if (std.posix.getenv(HOME_ENV)) |home_env| {
-        return try std.fmt.allocPrintZ(alloc, "{s}/z_math", .{home_env});
-    }
-    std.debug.print("{s} env not set\n", .{HOME_ENV});
-    std.debug.print("Z_Math only supports the POSIX-compliant system.\n", .{});
-    std.process.exit(1);
+    const home_env = switch (native_os) {
+        .windows => HOME_ENV_W,
+        .linux => HOME_ENV_L,
+        else => {
+            std.debug.print("Z_Math currently supports only Windows and Linux. Detected unsupported OS: {s}.\n", .{@tagName(native_os)});
+            std.process.exit(1);
+        },
+    };
+    const base_path = try std.process.getEnvVarOwned(alloc, home_env);
+    defer alloc.free(base_path);
+    return try std.fmt.allocPrintZ(alloc, "{s}/z_math", .{base_path});
 }
 
 pub const DB = struct {
