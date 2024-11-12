@@ -4,7 +4,6 @@ const evalStruct = @import("eval.zig");
 const ZAppError = @import("./errors.zig").ZAppErrors;
 const assert = @import("./assert/assert.zig").assert;
 const parser = @import("./parser.zig");
-const Length = @import("./unit/length.zig");
 const lexer = @import("./lexer.zig");
 const Order = @import("./db/sql_query.zig").Order;
 const Token = @import("./token.zig").Token;
@@ -18,7 +17,11 @@ const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
 const Cmd = cmds.Cli;
 
-const VERSION = "0.3.0";
+const Length = @import("./unit/length.zig");
+const Volume = @import("./unit/volume.zig");
+const Tempe = @import("./unit/temp.zig");
+
+const VERSION = "0.5.0";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -120,6 +123,28 @@ pub fn main() !void {
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, lenght.to.?.name });
             defer allocator.free(output);
             db.addExpr(input, output, "length", exe_id);
+        },
+        .volume => {
+            if (try cmd.getBoolArg("-u")) {
+                Volume.printUnits();
+                return;
+            }
+            var volume = Volume.init(input, &lex);
+            const out = try volume.calculate();
+            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, volume.to.?.name });
+            defer allocator.free(output);
+            db.addExpr(input, output, @tagName(cmd.cmd.name), exe_id);
+        },
+        .temp => {
+            if (try cmd.getBoolArg("-u")) {
+                Tempe.printUnits();
+                return;
+            }
+            var tempe = Tempe.init(input, &lex);
+            const out = try tempe.calculate();
+            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, @tagName(tempe.to.?.name) });
+            defer allocator.free(output);
+            db.addExpr(input, output, @tagName(cmd.cmd.name), exe_id);
         },
         .area => {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
