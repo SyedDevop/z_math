@@ -21,7 +21,7 @@ const Length = @import("./unit/length.zig");
 const Volume = @import("./unit/volume.zig");
 const Tempe = @import("./unit/temp.zig");
 
-const VERSION = "0.5.0";
+const VERSION = "0.5.1";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -182,6 +182,13 @@ pub fn main() !void {
             }
 
             return;
+        },
+        .config => {
+            const showDb = try cmd.getBoolArg("-dp");
+            if (showDb) {
+                std.debug.print("{s}\n", .{db.path});
+                return;
+            }
         },
         .completion => {
             const opts = try cmds.CmdName.getCmdNameList(allocator);

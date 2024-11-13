@@ -10,6 +10,7 @@ pub const CmdName = enum {
     completion,
     volume,
     temp,
+    config,
 
     pub fn getCmdNameList(alloc: Allocator) ![]const u8 {
         var result = std.ArrayList(u8).init(alloc);
@@ -204,6 +205,20 @@ const cmdList: []const Cmd = &.{
         .usage = "m completion ",
         .info = "This command Generate the autocompletion script for gitpuller for the specified shell.",
         .options = null,
+    },
+    .{
+        .name = .config,
+        .min_arg = 0,
+        .usage = "m config [OPTIONS]",
+        .info = "This command configurer you z_math.",
+        .options = &.{
+            .{
+                .long = "--db-path",
+                .short = "-dp",
+                .info = "Print the dp path.",
+                .value = .{ .bool = false },
+            },
+        },
     },
 };
 
