@@ -7,7 +7,7 @@ const parser = @import("./parser.zig");
 const lexer = @import("./lexer.zig");
 const Order = @import("./db/sql_query.zig").Order;
 const Token = @import("./token.zig").Token;
-const cmds = @import("./zarg/cmd.zig");
+const zarg = @import("./zarg/cmd.zig");
 const Db = @import("./db/db.zig").DB;
 const utils = @import("./utils.zig");
 
@@ -15,13 +15,13 @@ const Parser = parser.Parser;
 const print = std.debug.print;
 const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
-const Cmd = cmds.Cli;
+const Cli = zarg.Cli;
 
 const Length = @import("./unit/length.zig");
 const Volume = @import("./unit/volume.zig");
 const Tempe = @import("./unit/temp.zig");
 
-const VERSION = "0.5.1";
+const VERSION = "0.5.1+1";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -66,14 +66,14 @@ pub fn main() !void {
     var db = try Db.init(allocator);
     defer db.deinit();
 
-    var cmd = try Cmd.init(allocator, "Z Math", USAGE, VERSION);
-    defer cmd.deinit();
-    try cmd.parse();
+    var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
+    defer cli.deinit();
+    try cli.parse();
 
-    const input = cmd.data;
+    const input = cli.data;
     var lex = Lexer.init(input, allocator);
 
-    switch (cmd.cmd.name) {
+    switch (cli.cmd.name) {
         .root => {
             // FIX: error out on words,
             var par = try Parser.init(input, &lex, allocator);
@@ -96,7 +96,7 @@ pub fn main() !void {
             std.debug.print("\n", .{});
         },
         .delete => {
-            if (try cmd.getStrArg("--range")) |range| {
+            if (try cli.getStrArg("--range")) |range| {
                 var ranges = std.mem.splitSequence(u8, range, "..");
                 const from: u64 = try utils.parseUintBase10(u64, ranges.next());
                 const to: u64 = try utils.parseUintBase10(u64, ranges.next());
@@ -108,13 +108,13 @@ pub fn main() !void {
                 db.delRangeExpr(from, to);
                 std.debug.print("Deleted entries {d}..{d} ", .{ from, to });
             }
-            if (try cmd.getBoolArg("--all")) {
+            if (try cli.getBoolArg("--all")) {
                 db.delAllExpr();
                 std.debug.print("All entries have been successfully deleted.\n", .{});
             }
         },
         .length => {
-            if (try cmd.getBoolArg("-u")) {
+            if (try cli.getBoolArg("-u")) {
                 Length.printUnits();
                 return;
             }
@@ -125,7 +125,7 @@ pub fn main() !void {
             db.addExpr(input, output, "length", exe_id);
         },
         .volume => {
-            if (try cmd.getBoolArg("-u")) {
+            if (try cli.getBoolArg("-u")) {
                 Volume.printUnits();
                 return;
             }
@@ -133,10 +133,10 @@ pub fn main() !void {
             const out = try volume.calculate();
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, volume.to.?.name });
             defer allocator.free(output);
-            db.addExpr(input, output, @tagName(cmd.cmd.name), exe_id);
+            db.addExpr(input, output, @tagName(cli.cmd.name), exe_id);
         },
         .temp => {
-            if (try cmd.getBoolArg("-u")) {
+            if (try cli.getBoolArg("-u")) {
                 Tempe.printUnits();
                 return;
             }
@@ -144,15 +144,15 @@ pub fn main() !void {
             const out = try tempe.calculate();
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, @tagName(tempe.to.?.name) });
             defer allocator.free(output);
-            db.addExpr(input, output, @tagName(cmd.cmd.name), exe_id);
+            db.addExpr(input, output, @tagName(cli.cmd.name), exe_id);
         },
         .area => {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
         },
         .history => {
-            const is_id = try cmd.getBoolArg("-id");
-            const order = if (try cmd.getBoolArg("-e")) Order.ASC else Order.DESC;
-            if (try cmd.getBoolArg("--all")) {
+            const is_id = try cli.getBoolArg("-id");
+            const order = if (try cli.getBoolArg("-e")) Order.ASC else Order.DESC;
+            if (try cli.getBoolArg("--all")) {
                 const rows = try db.getAllExprs(order);
                 defer {
                     for (rows) |row| row.destory(allocator);
@@ -167,7 +167,7 @@ pub fn main() !void {
                 }
                 return;
             }
-            const limit: u64 = if (try cmd.getNumArg("-l")) |l| @intCast(l) else 5;
+            const limit: u64 = if (try cli.getNumArg("-l")) |l| @intCast(l) else 5;
             const rows = try db.getExprs(.{ .limit = limit, .order = order });
             defer {
                 for (rows) |row| row.destory(allocator);
@@ -184,14 +184,14 @@ pub fn main() !void {
             return;
         },
         .config => {
-            const showDb = try cmd.getBoolArg("-dp");
+            const showDb = try cli.getBoolArg("-dp");
             if (showDb) {
                 std.debug.print("{s}\n", .{db.path});
                 return;
             }
         },
         .completion => {
-            const opts = try cmds.CmdName.getCmdNameList(allocator);
+            const opts = try zarg.CmdName.getCmdNameList(allocator);
             defer allocator.free(opts);
             std.debug.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
         },
