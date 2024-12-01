@@ -392,6 +392,10 @@ pub const Cli = struct {
         const cmd_opt = self.cmd;
         try stdout.print("USAGE: \n", .{});
         try stdout.print("  {s}\n\n", .{cmd_opt.usage});
+        if (cmd_opt.info) |info| {
+            try stdout.print("INFO: \n", .{});
+            try stdout.print("  {s}\n\n", .{info});
+        }
         if (cmd_opt.example) |ex| {
             try stdout.print("EXAMPLE: \n", .{});
             try stdout.print("  {s}\n\n", .{ex});

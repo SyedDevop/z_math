@@ -7,7 +7,7 @@ const parser = @import("./parser.zig");
 const lexer = @import("./lexer.zig");
 const Order = @import("./db/sql_query.zig").Order;
 const Token = @import("./token.zig").Token;
-const zarg = @import("./zarg/cmd.zig");
+const zarg = @import("./zarg/zarg.zig");
 const Db = @import("./db/db.zig").DB;
 const utils = @import("./utils.zig");
 
@@ -15,7 +15,8 @@ const Parser = parser.Parser;
 const print = std.debug.print;
 const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
-const Cli = zarg.Cli;
+const Cli = zarg.arg.Cli;
+const Color = zarg.color;
 
 const Length = @import("./unit/length.zig");
 const Volume = @import("./unit/volume.zig");
@@ -69,6 +70,7 @@ pub fn main() !void {
     var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
     defer cli.deinit();
     try cli.parse();
+    const color = Color.Zcolor.init(allocator);
 
     const input = cli.data;
     var lex = Lexer.init(input, allocator);
@@ -91,8 +93,19 @@ pub fn main() !void {
             defer allocator.free(output);
 
             db.addExpr(input, output, "root", exe_id);
-            std.debug.print(" \x1b[0;36mThe input is :: {s} ::\x1b[0m\n", .{input});
-            std.debug.print(" \x1b[3;21;32mAns: {s}\x1b[0m\n", .{output});
+            try color.fmtPrintln("The input is :: {s} ::", .{input}, .{
+                .fgColor = .{ .Plate = 14 },
+                .padding = Color.Padding.inLine(1, 0),
+            });
+            try color.fmtPrintln("Ans: {s}", .{output}, .{
+                .fontStyle = .{
+                    .doublyUnderline = true,
+                    .italic = true,
+                },
+                .fgColor = .{ .Plate = 10 },
+                .padding = Color.Padding.inLine(1, 0),
+                .controlCode = .{ .bell = true },
+            });
             std.debug.print("\n", .{});
         },
         .delete => {
@@ -191,7 +204,7 @@ pub fn main() !void {
             }
         },
         .completion => {
-            const opts = try zarg.CmdName.getCmdNameList(allocator);
+            const opts = try zarg.arg.CmdName.getCmdNameList(allocator);
             defer allocator.free(opts);
             std.debug.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
         },
