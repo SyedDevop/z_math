@@ -2,6 +2,8 @@ const std = @import("std");
 const builtin = @import("builtin");
 const posix = std.posix;
 const os = std.os;
+const win = os.windows;
+const winK = win.kernel32;
 
 /// Represents the size of a terminal in both character dimensions and pixel dimensions.
 pub const TermSize = struct {
@@ -16,7 +18,24 @@ pub const TermSize = struct {
     /// Terminal height, measured in pixels.
     Ypixel: ?u16 = null,
 };
+const WindowsConsoleMode = struct {
+    stdin: u32,
+    stdout: u32,
 
+    const Input = enum(u32) {
+        enable_processed_input = 0x0001,
+        enable_line_input = 0x0002,
+        enable_echo_input = 0x0004,
+        enable_virtual_terminal_input = 0x0200,
+    };
+
+    const Output = enum(u32) {
+        enable_processed_output = 0x0001,
+        enable_wrap_at_eol_output = 0x0002,
+        enable_virtual_terminal_processing = 0x0004,
+        disable_newline_auto_return = 0x0008,
+    };
+};
 /// A raw terminal representation, you can enter terminal raw mode
 /// using this struct. Raw mode is essential to create a TUI.
 pub const RawTerm = struct {
@@ -38,10 +57,10 @@ pub fn isTerminal(file: std.fs.File) bool {
     return std.posix.isatty(file.handle);
 }
 
-// makeRaw puts the terminal connected to the given file descriptor into raw
-// mode and returns the previous state of the terminal so that it can be
-// restored.
-pub fn makeRaw(fd: posix.fd_t) !RawTerm {
+/// rawModePosix puts the terminal connected to the given file descriptor into raw
+/// mode and returns the previous state of the terminal so that it can be
+/// restored.
+pub fn rawModePosix(fd: posix.fd_t) !RawTerm {
     const original_termios = try std.posix.tcgetattr(fd);
     var raw = original_termios;
 
@@ -71,6 +90,16 @@ pub fn makeRaw(fd: posix.fd_t) !RawTerm {
         .handle = fd,
     };
 }
+
+pub fn rawModeWin(fd: posix.fd_t) !void {
+    if (0 == 0) return error.NotImplemented;
+    var mode_stdout: win.DWORD = 0;
+    switch (winK.GetConsoleMode(fd, &mode_stdout)) {
+        win.TRUE => {},
+        else => error.Unexpected,
+    }
+}
+
 /// getSize returns the visible dimensions of the given terminal.
 ///
 /// These dimensions don't include any scrollback buffer height.
