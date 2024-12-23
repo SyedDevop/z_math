@@ -43,11 +43,11 @@ pub const FontStyle = packed struct {
     overline: bool = false,
 
     const Self = @This();
-    pub fn toU12(self: Self) u13 {
+    pub fn toU12(self: Self) u12 {
         return @bitCast(self);
     }
 
-    pub fn fromU12(bits: u13) Self {
+    pub fn fromU12(bits: u12) Self {
         return @bitCast(bits);
     }
 

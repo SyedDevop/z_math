@@ -15,7 +15,7 @@ const Parser = parser.Parser;
 const print = std.debug.print;
 const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
-const Cli = zarg.arg.Cli;
+const Cli = zarg.cli.Cli;
 const Color = zarg.color;
 
 const Length = @import("./unit/length.zig");
@@ -86,7 +86,6 @@ pub fn main() !void {
                 if (e == ZAppError.exit) return;
                 return e;
             };
-
             var eval = Eval.init(&par.ast, allocator);
             defer eval.deinit();
             const output = try std.fmt.allocPrint(allocator, "{d}", .{try eval.eval()});
@@ -204,7 +203,7 @@ pub fn main() !void {
             }
         },
         .completion => {
-            const opts = try zarg.arg.CmdName.getCmdNameList(allocator);
+            const opts = try zarg.cli.CmdName.getCmdNameList(allocator);
             defer allocator.free(opts);
             std.debug.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
         },
