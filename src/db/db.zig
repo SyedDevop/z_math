@@ -24,7 +24,7 @@ pub fn getDbPath(alloc: Allocator) ![:0]u8 {
     };
     const base_path = try std.process.getEnvVarOwned(alloc, home_env);
     defer alloc.free(base_path);
-    return try std.fmt.allocPrintZ(alloc, "{s}/z_math", .{base_path});
+    return try std.fs.path.joinZ(alloc, &.{ base_path, "z_math" });
 }
 
 pub const DB = struct {

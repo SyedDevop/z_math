@@ -22,7 +22,7 @@ const Length = @import("./unit/length.zig");
 const Volume = @import("./unit/volume.zig");
 const Tempe = @import("./unit/temp.zig");
 
-const VERSION = "0.5.1+1";
+const VERSION = "0.5.2";
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -103,7 +103,6 @@ pub fn main() !void {
                 },
                 .fgColor = .{ .Plate = 10 },
                 .padding = Color.Padding.inLine(1, 0),
-                .controlCode = .{ .bell = true },
             });
             std.debug.print("\n", .{});
         },
