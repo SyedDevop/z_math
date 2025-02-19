@@ -22,7 +22,9 @@ const Length = @import("./unit/length.zig");
 const Volume = @import("./unit/volume.zig");
 const Tempe = @import("./unit/temp.zig");
 
-const VERSION = "0.5.2";
+const build_options = @import("build_options");
+
+const VERSION = "0.5.2+1\n" ++ "\nVersion\n  - version : 0.5.2+1\n  - git_hash: " ++ build_options.GIT_HASH;
 const USAGE =
     \\CLI Calculator App
     \\------------------
