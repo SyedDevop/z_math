@@ -1,6 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-
+const Version = @import("../version.zig");
 pub const CmdName = enum {
     root,
     length,
@@ -323,7 +323,7 @@ pub const Cli = struct {
             try self.help();
             std.process.exit(0);
         } else if (isVersionOption(args[idx])) {
-            std.debug.print("Z Math {s}", .{self.version});
+            try Version.print();
             std.process.exit(0);
         }
 

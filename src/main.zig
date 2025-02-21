@@ -24,7 +24,7 @@ const Tempe = @import("./unit/temp.zig");
 
 const build_options = @import("build_options");
 
-const VERSION = "0.5.2+1\n" ++ "\nVersion\n  - version : 0.5.2+1\n  - git_hash: " ++ build_options.GIT_HASH;
+const VERSION = build_options.version_string ++ "\n" ++ "\nVersion\n  - version : 0.5.2+1\n  - git_hash: " ++ build_options.git_hash;
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -68,7 +68,6 @@ pub fn main() !void {
 
     var db = try Db.init(allocator);
     defer db.deinit();
-
     var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
     defer cli.deinit();
     try cli.parse();
