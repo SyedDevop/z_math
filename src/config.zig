@@ -42,6 +42,7 @@ pub fn init(b: *std.Build) !Self {
 pub fn addLibs(self: *const Self, exe: *std.Build.Step.Compile, b: *std.Build) void {
     _ = self;
 
+    exe.addIncludePath(b.path("lib"));
     // Add sqlite3;
     exe.addCSourceFile(.{ .file = b.path("lib/sqlite3.c"), .flags = &.{
         "-DSQLITE_DQS=0",
