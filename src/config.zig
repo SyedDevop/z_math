@@ -3,7 +3,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const Self = @This();
-version: std.SemanticVersion = .{ .major = 0, .minor = 4, .patch = 0 },
+
+version: std.SemanticVersion = .{ .major = 0, .minor = 6, .patch = 0 },
 git_hash: []const u8,
 git_hash_short: []const u8,
 

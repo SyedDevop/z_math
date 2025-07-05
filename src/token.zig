@@ -34,9 +34,9 @@ pub const Token = union(enum) {
 
     pub fn keyword(key: []const u8) ?Token {
         const map = std.StaticStringMap(Token).initComptime(.{
-            .{ "tan", .{ .function = "tan" } },
-            .{ "sine", .{ .function = "sine" } },
-            .{ "cost", .{ .function = "cost" } },
+            .{ "tan", Token{ .function = "tan" } },
+            .{ "sine", Token{ .function = "sine" } },
+            .{ "cost", Token{ .function = "cost" } },
         });
         return map.get(key);
     }

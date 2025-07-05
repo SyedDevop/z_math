@@ -20,7 +20,12 @@ pub fn build(b: *std.Build) !void {
     });
     const build_options = b.addOptions();
     exe.root_module.addImport("zqlite", zqlite.module("zqlite"));
+    const zarg_dep = b.dependency("zarg", .{
+        .target = target,
+        .optimize = optimize,
+    });
 
+    exe.root_module.addImport("zarg", zarg_dep.module("zarg"));
     config.addLibs(exe, b);
     try config.addOptions(build_options);
 

@@ -10,9 +10,9 @@ const TempType = enum {
 };
 const Temperature = struct { name: TempType, v: f64 };
 pub const tempMap = std.StaticStringMap(Temperature).initComptime(.{
-    .{ "c", .{ .name = .Celsius, .v = 1.0 } },
-    .{ "f", .{ .name = .Fahrenheit, .v = 33.8 } },
-    .{ "k", .{ .name = .Kelvin, .v = 273.15 } },
+    .{ "c", Temperature{ .name = .Celsius, .v = 1.0 } },
+    .{ "f", Temperature{ .name = .Fahrenheit, .v = 33.8 } },
+    .{ "k", Temperature{ .name = .Kelvin, .v = 273.15 } },
 });
 
 const Self = @This();

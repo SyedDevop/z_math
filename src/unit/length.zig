@@ -6,18 +6,18 @@ const Lexer = lexer.Lexer;
 const Lenght = struct { name: []const u8, v: f64 };
 
 pub const lenghtMap = std.StaticStringMap(Lenght).initComptime(.{
-    .{ "mm", .{ .name = "Millimeter", .v = 0.001 } },
-    .{ "cm", .{ .name = "Centimeter", .v = 0.01 } },
-    .{ "m", .{ .name = "Meter", .v = 1.0 } },
-    .{ "km", .{ .name = "Kilometer", .v = 1000.0 } },
-    .{ "ft", .{ .name = "Feet", .v = 0.3047 } },
-    .{ "hc", .{ .name = "Hectometer", .v = 100.0 } },
-    .{ "dam", .{ .name = "Decameter", .v = 10.0 } },
-    .{ "dm", .{ .name = "Decimeter", .v = 0.1 } },
-    .{ "in", .{ .name = "Inch", .v = 0.0254 } },
-    .{ "yd", .{ .name = "Yard", .v = 0.9114 } },
-    .{ "mi", .{ .name = "Mile", .v = 1609.344 } },
-    .{ "nmi", .{ .name = "Nautical mile", .v = 1853.184 } },
+    .{ "mm", Lenght{ .name = "Millimeter", .v = 0.001 } },
+    .{ "cm", Lenght{ .name = "Centimeter", .v = 0.01 } },
+    .{ "m", Lenght{ .name = "Meter", .v = 1.0 } },
+    .{ "km", Lenght{ .name = "Kilometer", .v = 1000.0 } },
+    .{ "ft", Lenght{ .name = "Feet", .v = 0.3047 } },
+    .{ "hc", Lenght{ .name = "Hectometer", .v = 100.0 } },
+    .{ "dam", Lenght{ .name = "Decameter", .v = 10.0 } },
+    .{ "dm", Lenght{ .name = "Decimeter", .v = 0.1 } },
+    .{ "in", Lenght{ .name = "Inch", .v = 0.0254 } },
+    .{ "yd", Lenght{ .name = "Yard", .v = 0.9114 } },
+    .{ "mi", Lenght{ .name = "Mile", .v = 1609.344 } },
+    .{ "nmi", Lenght{ .name = "Nautical mile", .v = 1853.184 } },
 });
 
 const Self = @This();

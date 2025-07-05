@@ -6,13 +6,13 @@ const Lexer = lexer.Lexer;
 const Volume = struct { name: []const u8, v: f64 };
 
 pub const volMap = std.StaticStringMap(Volume).initComptime(.{
-    .{ "l", .{ .name = "Liter", .v = 1.0 } },
-    .{ "ml", .{ .name = "Milliliter", .v = 0.001 } },
-    .{ "floz", .{ .name = "FluidOunce", .v = 0.0295735295625 } },
-    .{ "gal", .{ .name = "Gallon", .v = 3.785411784 } },
-    .{ "qt", .{ .name = "Quart", .v = 0.946352946 } },
-    .{ "pt", .{ .name = "Pint", .v = 0.473176473 } },
-    .{ "gil", .{ .name = "Gil", .v = 0.118294118 } },
+    .{ "l", Volume{ .name = "Liter", .v = 1.0 } },
+    .{ "ml", Volume{ .name = "Milliliter", .v = 0.001 } },
+    .{ "floz", Volume{ .name = "FluidOunce", .v = 0.0295735295625 } },
+    .{ "gal", Volume{ .name = "Gallon", .v = 3.785411784 } },
+    .{ "qt", Volume{ .name = "Quart", .v = 0.946352946 } },
+    .{ "pt", Volume{ .name = "Pint", .v = 0.473176473 } },
+    .{ "gil", Volume{ .name = "Gil", .v = 0.118294118 } },
 });
 
 const Self = @This();

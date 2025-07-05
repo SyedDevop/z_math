@@ -7,15 +7,16 @@ const parser = @import("./parser.zig");
 const lexer = @import("./lexer.zig");
 const Order = @import("./db/sql_query.zig").Order;
 const Token = @import("./token.zig").Token;
-const zarg = @import("./zarg/zarg.zig");
+const zarg = @import("zarg");
+const CliCmds = @import("cli_commands.zig");
 const Db = @import("./db/db.zig").DB;
 const utils = @import("./utils.zig");
+const Version = @import("version.zig");
 
 const Parser = parser.Parser;
 const print = std.debug.print;
 const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
-const Cli = zarg.cli.Cli;
 const Color = zarg.color;
 
 const Length = @import("./unit/length.zig");
@@ -24,7 +25,6 @@ const Tempe = @import("./unit/temp.zig");
 
 const build_options = @import("build_options");
 
-const VERSION = build_options.version_string ++ "\n" ++ "\nVersion\n  - version : 0.5.2+1\n  - git_hash: " ++ build_options.git_hash;
 const USAGE =
     \\CLI Calculator App
     \\------------------
@@ -59,6 +59,13 @@ const AUTOCOMPLETION =
     \\ complete -F _m_cli_autocomplete m
 ;
 
+fn genVersion(version_form: zarg.VersionCallFrom) []const u8 {
+    return switch (version_form) {
+        .version => Version.comptimeStr(),
+        .help => build_options.version_string,
+    };
+}
+
 pub fn main() !void {
     const exe_id = std.crypto.random.intRangeAtMost(u64, 1000, 15000);
 
@@ -68,15 +75,27 @@ pub fn main() !void {
 
     var db = try Db.init(allocator);
     defer db.deinit();
-    var cli = try Cli.init(allocator, "Z Math", USAGE, VERSION);
+
+    var cli = try zarg.Cli(CliCmds.MyCLiCmds).init(
+        allocator,
+        "Z Math",
+        USAGE,
+        .{ .fun = &genVersion },
+        &CliCmds.myCLiCmdList,
+    );
+
     defer cli.deinit();
-    try cli.parse();
+    cli.parse() catch |err| {
+        try cli.printParseError(err);
+        return;
+    };
     const color = Color.Zcolor.init(allocator);
 
-    const input = cli.data;
+    const input = try cli.getAllPosArgAsStr() orelse "";
+    defer allocator.free(input);
     var lex = Lexer.init(input, allocator);
 
-    switch (cli.cmd.name) {
+    switch (cli.running_cmd.name) {
         .root => {
             // FIX: error out on words,
             var par = try Parser.init(input, &lex, allocator);
@@ -145,7 +164,7 @@ pub fn main() !void {
             const out = try volume.calculate();
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, volume.to.?.name });
             defer allocator.free(output);
-            db.addExpr(input, output, @tagName(cli.cmd.name), exe_id);
+            db.addExpr(input, output, @tagName(cli.running_cmd.name), exe_id);
         },
         .temp => {
             if (try cli.getBoolArg("-u")) {
@@ -156,7 +175,7 @@ pub fn main() !void {
             const out = try tempe.calculate();
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, @tagName(tempe.to.?.name) });
             defer allocator.free(output);
-            db.addExpr(input, output, @tagName(cli.cmd.name), exe_id);
+            db.addExpr(input, output, @tagName(cli.running_cmd.name), exe_id);
         },
         .area => {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
@@ -203,7 +222,7 @@ pub fn main() !void {
             }
         },
         .completion => {
-            const opts = try zarg.cli.CmdName.getCmdNameList(allocator);
+            const opts = try CliCmds.MyCLiCmds.getCmdNameList(allocator);
             defer allocator.free(opts);
             std.debug.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
         },
