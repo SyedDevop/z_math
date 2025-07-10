@@ -112,16 +112,22 @@ pub fn main() !void {
             defer allocator.free(output);
 
             db.addExpr(input, output, "root", exe_id);
+            if (try cli.getBoolArg("--raw")) {
+                std.debug.print("{s}", .{output});
+                return;
+            }
+
             try color.fmtPrintln("The input is :: {s} ::", .{input}, .{
                 .fgColor = .{ .Plate = 14 },
                 .padding = Color.Padding.inLine(1, 0),
             });
+
             try color.fmtPrintln("Ans: {s}", .{output}, .{
                 .fontStyle = .{
                     .doublyUnderline = true,
                     .italic = true,
                 },
-                .fgColor = .{ .Plate = 10 },
+                .fgColor = .toRGB(255, 0, 0),
                 .padding = Color.Padding.inLine(1, 0),
             });
             std.debug.print("\n", .{});

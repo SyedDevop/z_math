@@ -31,11 +31,20 @@ pub const myCLiCmdList = [_]CmdType{
     CmdType{
         .name = .root,
         .usage = "m [OPTIONS] \"EXPRESSION\"",
+        .min_pos_arg = 1,
+        .min_arg = 0,
+        .print_help_for_min_pos_arg = true,
         .options = &.{
             .{
                 .long = "--interactive",
                 .short = "-i",
                 .info = "Start interactive mode to evaluate expressions based on previous results.",
+                .value = .{ .bool = null },
+            },
+            .{
+                .long = "--raw",
+                .short = "-r",
+                .info = "Prints the raw result of the expression without any formatting.",
                 .value = .{ .bool = null },
             },
         },
