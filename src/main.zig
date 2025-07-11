@@ -17,7 +17,7 @@ const Parser = parser.Parser;
 const print = std.debug.print;
 const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
-const Color = zarg.color;
+const ZColor = zarg.ZColor;
 
 const Length = @import("./unit/length.zig");
 const Volume = @import("./unit/volume.zig");
@@ -66,6 +66,18 @@ fn genVersion(version_form: zarg.VersionCallFrom) []const u8 {
     };
 }
 
+var header_style: ZColor.Style = .{
+    .fgColor = ZColor.BrightCyan,
+};
+
+var answer_style: ZColor.Style = .{
+    .fontStyle = .{
+        .doublyUnderline = true,
+        .italic = true,
+    },
+    .fgColor = ZColor.Red,
+};
+
 pub fn main() !void {
     const exe_id = std.crypto.random.intRangeAtMost(u64, 1000, 15000);
 
@@ -89,7 +101,6 @@ pub fn main() !void {
         try cli.printParseError(err);
         return;
     };
-    const color = Color.Zcolor.init(allocator);
 
     const input = try cli.getAllPosArgAsStr() orelse "";
     defer allocator.free(input);
@@ -111,26 +122,17 @@ pub fn main() !void {
             const output = try std.fmt.allocPrint(allocator, "{d}", .{try eval.eval()});
             defer allocator.free(output);
 
+            var writer = std.io.getStdOut().writer();
+
             db.addExpr(input, output, "root", exe_id);
             if (try cli.getBoolArg("--raw")) {
-                std.debug.print("{s}", .{output});
+                try writer.print("{s}", .{output});
                 return;
             }
 
-            try color.fmtPrintln("The input is :: {s} ::", .{input}, .{
-                .fgColor = .{ .Plate = 14 },
-                .padding = Color.Padding.inLine(1, 0),
-            });
-
-            try color.fmtPrintln("Ans: {s}", .{output}, .{
-                .fontStyle = .{
-                    .doublyUnderline = true,
-                    .italic = true,
-                },
-                .fgColor = .toRGB(255, 0, 0),
-                .padding = Color.Padding.inLine(1, 0),
-            });
-            std.debug.print("\n", .{});
+            try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
+            try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
+            try writer.print("\n", .{});
         },
         .delete => {
             if (try cli.getStrArg("--range")) |range| {
