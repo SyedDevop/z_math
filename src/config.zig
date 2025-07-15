@@ -38,8 +38,8 @@ pub fn init(b: *std.Build) !Self {
     };
     const date = brk_date: {
         const date_cmd: []const []const u8 = switch (builtin.os.tag) {
-            .linux => &[_][]const u8{ "date", "+%d/%m/%Y %r" },
-            .windows => &[_][]const u8{ "powershell", "Get-Date -Format 'yyyy-MM-dd hh:mm:ss tt'" },
+            .linux => &[_][]const u8{ "date", "+%d-%m-%Y %r" },
+            .windows => &[_][]const u8{ "powershell", "Get-Date -Format 'dd-MM-yyyy hh:mm:ss tt'" },
             else => return error.UnsupportedOSForDate,
         };
         const output = b.runAllowFail(
