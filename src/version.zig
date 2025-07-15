@@ -27,6 +27,8 @@ pub fn comptimeStr() []const u8 {
         \\  - version        : {s}
         \\  - git_hash       : {s}
         \\  - git_hash_short : {s}
+        \\Build
+        \\  - Date           : {s}
         \\Build Config
         \\  - Zig version    : {s}
         \\  - build mode     : {s}
@@ -39,6 +41,7 @@ pub fn comptimeStr() []const u8 {
         build_option.version_string,
         build_option.git_hash,
         build_option.git_hash_short,
+        build_option.compiled_date,
         builtin.zig_version_string,
         @tagName(builtin.mode),
     });

@@ -8,8 +8,8 @@
             .hash = "zqlite-0.0.0-RWLaYxJ_lQBh1RLy13q2qJd5W8R6stUnMiARabnK6OnX",
         },
         .zarg = .{
-            .url = "git+https://github.com/SyedDevop/zarg#407ffc20254f2ef7d917763ceb32d5a17906e021",
-            .hash = "zarg-0.1.0-x4gzxejmAAAUad9sV6IhbVnoqeSQc55fEZDJ9vLNUxdn",
+            .url = "git+https://github.com/SyedDevop/zarg#835a658cc0e878b24be069880e321dfb3c03b743",
+            .hash = "zarg-0.1.0-x4gzxVPpAADsujDg1cMlTa7GnOsjgOS16PJt1kjMupz6",
         },
     },
     .paths = .{
