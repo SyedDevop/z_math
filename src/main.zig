@@ -23,6 +23,8 @@ const Length = @import("./unit/length.zig");
 const Volume = @import("./unit/volume.zig");
 const Tempe = @import("./unit/temp.zig");
 
+const NumWord = @import("num_words.zig");
+
 const build_options = @import("build_options");
 
 const USAGE =
@@ -77,6 +79,9 @@ var answer_style: ZColor.Style = .{
     },
     .fgColor = ZColor.Red,
 };
+var answer_word_style: ZColor.Style = .{
+    .fgColor = ZColor.BrightBlack,
+};
 
 pub fn main() !void {
     const exe_id = std.crypto.random.intRangeAtMost(u64, 1000, 15000);
@@ -119,7 +124,8 @@ pub fn main() !void {
             };
             var eval = Eval.init(&par.ast, allocator);
             defer eval.deinit();
-            const output = try std.fmt.allocPrint(allocator, "{d}", .{try eval.eval()});
+            const output_num = try eval.eval();
+            const output = try std.fmt.allocPrint(allocator, "{d}", .{output_num});
             defer allocator.free(output);
 
             var writer = std.io.getStdOut().writer();
@@ -132,6 +138,11 @@ pub fn main() !void {
 
             try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
             try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
+            if (try cli.getBoolArg("--word")) {
+                const word = try NumWord.floatToWord(allocator, output_num);
+                defer allocator.free(word);
+                try answer_word_style.fmtRender("{s}\n", .{word}, writer);
+            }
             try writer.print("\n", .{});
         },
         .delete => {

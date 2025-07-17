@@ -14,7 +14,9 @@ inline fn getWord(n: u8) []const u8 {
 }
 
 fn place2Word(n: u8, writer: Writer) !void {
-    if (n < 20) try writer.writeAll(getWord(n)) else if (n < 100) {
+    if (n < 20) {
+        try writer.writeAll(getWord(n));
+    } else if (n < 100) {
         try tenthWord(n, writer);
     }
 }
@@ -52,12 +54,8 @@ fn crore_word(n: u64, writer: Writer) !void {
     try lakh_word(n % 1_00_00_000, writer);
 }
 
-/// You need to free the string after you are done using it.
-fn numToWord(alloc: std.mem.Allocator, n: u64) ![]u8 {
-    var num_word = std.ArrayList(u8).init(alloc);
-    const writer = num_word.writer();
-
-    if (n < 20) {
+fn toWords(n: u64, writer: Writer) !void {
+    if (n < 100) {
         try place2Word(@intCast(n), writer);
     } else if (n < 1_000) {
         try hundredthWord(n, writer);
@@ -68,6 +66,34 @@ fn numToWord(alloc: std.mem.Allocator, n: u64) ![]u8 {
     } else if (n < 1_00_00_00_000) {
         try crore_word(n, writer);
     } else return NumErrors.NumberRangeNotSupported;
+}
+
+/// You need to free the string after you are done using it.
+pub fn numToWord(alloc: std.mem.Allocator, n: u64) ![]u8 {
+    var num_word = std.ArrayList(u8).init(alloc);
+    const writer = num_word.writer();
+    try toWords(n, writer);
+    return try num_word.toOwnedSlice();
+}
+
+/// You need to free the string after you are done using it.
+pub fn floatToWord(alloc: std.mem.Allocator, n: f64) ![]u8 {
+    var num_word = std.ArrayList(u8).init(alloc);
+    const writer = num_word.writer();
+
+    const whole_number: u64 = @intFromFloat(n);
+    try toWords(whole_number, writer);
+    try writer.print(" Point ", .{});
+
+    const frac: f64 = n - @as(f32, @floatFromInt(whole_number));
+    const fracAsInt: u64 = @intFromFloat(frac * 10);
+    try toWords(fracAsInt, writer);
 
     return try num_word.toOwnedSlice();
 }
+
+// pub fn main() !void {
+//     const alloc = std.heap.page_allocator;
+//     const num_word = try numToWord(alloc, 23);
+//     std.debug.print("{s}\n", .{num_word});
+// }

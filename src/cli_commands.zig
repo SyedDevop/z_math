@@ -42,6 +42,12 @@ pub const myCLiCmdList = [_]CmdType{
                 .value = .{ .bool = null },
             },
             .{
+                .long = "--word",
+                .short = "-w",
+                .info = "Prints the number in words.",
+                .value = .{ .bool = null },
+            },
+            .{
                 .long = "--raw",
                 .short = "-r",
                 .info = "Prints the raw result of the expression without any formatting.",
