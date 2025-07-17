@@ -8,11 +8,16 @@ const WORDS = [28][]const u8{
     "Sixty",    "Seventy",  "Eighty",   "Ninety",
 };
 const Writer = std.ArrayList(u8).Writer;
-
+const NumErrors = error{NumberRangeNotSupported};
 inline fn getWord(n: u8) []const u8 {
     return WORDS[if (n <= 20) n else (n / 10) + 18];
 }
 
+fn place2Word(n: u8, writer: Writer) !void {
+    if (n < 20) try writer.writeAll(getWord(n)) else if (n < 100) {
+        try tenthWord(n, writer);
+    }
+}
 fn tenthWord(n: u64, writer: Writer) !void {
     const tens = (n / 10) * 10;
     const ones = n % 10;
@@ -26,34 +31,43 @@ fn hundredthWord(n: u64, writer: Writer) !void {
     if (tenth > 0) try tenthWord(tenth, writer);
 }
 
+fn thousandthWord(n: u64, writer: Writer) !void {
+    const thousandth: u8 = @intCast(n / 1000);
+    try place2Word(thousandth, writer);
+    try writer.writeAll(" Thousand ");
+    const hundredth = n % 1000;
+    if (hundredth > 0) try hundredthWord(hundredth, writer);
+}
+fn lakh_word(n: u64, writer: Writer) !void {
+    const lakh: u8 = @intCast(n / 1_00_000);
+    try place2Word(lakh, writer);
+    try writer.writeAll(" Lakh ");
+    try thousandthWord(n % 1_00_000, writer);
+}
+
+fn crore_word(n: u64, writer: Writer) !void {
+    const crore: u8 = @intCast(n / 1_00_00_000);
+    try place2Word(crore, writer);
+    try writer.writeAll(" Crore ");
+    try lakh_word(n % 1_00_00_000, writer);
+}
+
+/// You need to free the string after you are done using it.
 fn numToWord(alloc: std.mem.Allocator, n: u64) ![]u8 {
     var num_word = std.ArrayList(u8).init(alloc);
-    var writer = num_word.writer();
+    const writer = num_word.writer();
 
     if (n < 20) {
-        try num_word.appendSlice(getWord(@intCast(n)));
-        return try num_word.toOwnedSlice();
-    }
-    if (n < 100) {
-        try tenthWord(n, writer);
-        return try num_word.toOwnedSlice();
-    }
-
-    if (n < 1000) {
+        try place2Word(@intCast(n), writer);
+    } else if (n < 1_000) {
         try hundredthWord(n, writer);
-        return try num_word.toOwnedSlice();
-    }
+    } else if (n < 1_00_000) {
+        try thousandthWord(n, writer);
+    } else if (n < 1_00_00_000) {
+        try lakh_word(n, writer);
+    } else if (n < 1_00_00_00_000) {
+        try crore_word(n, writer);
+    } else return NumErrors.NumberRangeNotSupported;
 
-    if (n < 1_00_000) {
-        try writer.print("{s} Thousand ", .{getWord(@intCast(n / 1000))});
-        const hundredth = n % 1000;
-        if (hundredth > 0) try hundredthWord(hundredth, writer);
-        return try num_word.toOwnedSlice();
-    }
     return try num_word.toOwnedSlice();
-}
-pub fn main() !void {
-    const alloc = std.heap.page_allocator;
-    const num_word = try numToWord(alloc, 99999);
-    std.debug.print("{s}\n", .{num_word});
 }
