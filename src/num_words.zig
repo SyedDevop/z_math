@@ -80,13 +80,13 @@ pub fn numToWord(alloc: std.mem.Allocator, n: u64) ![]u8 {
 pub fn floatToWord(alloc: std.mem.Allocator, n: f64) ![]u8 {
     var num_word = std.ArrayList(u8).init(alloc);
     const writer = num_word.writer();
-
-    const whole_number: u64 = @intFromFloat(n);
+    if (n < 0) try writer.print("(negative) ", .{});
+    const whole_number: u64 = @intFromFloat(@abs(n));
     try toWords(whole_number, writer);
     try writer.print(" Point ", .{});
 
-    const frac: f64 = n - @as(f32, @floatFromInt(whole_number));
-    const fracAsInt: u64 = @intFromFloat(frac * 10);
+    const frac: f64 = @abs(n) - @as(f32, @floatFromInt(whole_number));
+    const fracAsInt: u64 = @intFromFloat(frac * 100);
     try toWords(fracAsInt, writer);
 
     return try num_word.toOwnedSlice();
