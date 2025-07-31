@@ -28,7 +28,7 @@ pub fn formateToRupees(alloc: Allocator, n: f64) ![]u8 {
     var i: usize = numbers.items.len - 1;
     while (i < numbers.items.len) : (i -%= 1) {
         const ns = numbers.items[i];
-        if (ns < 10) try num_fmt_w.print("0", .{});
+        if (ns < 10 and i < numbers.items.len - 1) try num_fmt_w.print("0", .{});
         try num_fmt_w.print("{d},", .{ns});
     }
     try num_fmt_w.print("{d:.2}", .{hundred});
