@@ -85,7 +85,7 @@ pub fn floatToWord(alloc: std.mem.Allocator, n: f64) ![]u8 {
     try toWords(whole_number, writer);
     try writer.print(" Point ", .{});
 
-    const frac: f64 = @abs(n) - @as(f32, @floatFromInt(whole_number));
+    const frac: f64 = @abs(n) - @as(f64, @floatFromInt(whole_number));
     const fracAsInt: u64 = @intFromFloat(frac * 100);
     try toWords(fracAsInt, writer);
 
