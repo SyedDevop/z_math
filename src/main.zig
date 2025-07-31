@@ -128,6 +128,7 @@ pub fn main() !void {
             const output = try std.fmt.allocPrint(allocator, "{d}", .{output_num});
             defer allocator.free(output);
 
+            _ = std.os.windows.kernel32.SetConsoleOutputCP(65001);
             var writer = std.io.getStdOut().writer();
 
             db.addExpr(input, output, "root", exe_id);
@@ -138,6 +139,34 @@ pub fn main() !void {
 
             try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
             try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
+            if (try cli.getBoolArg("-i")) {
+                const is_nagative = if (output_num < 0.0) true else false; // if (output_num < 0) {}
+                const i_num: usize = @intFromFloat(@abs(output_num));
+                const hundred: usize = @mod(i_num, 1000); // @mod(output_num % 1000);
+                var num: usize = i_num / 1000;
+                var numbers: [8]u8 = undefined;
+                @memset(&numbers, 0);
+                var i: usize = 7;
+                while (num > 0 and i >= 0) : (i -= 1) {
+                    if (num < 100) {
+                        numbers[i] = @truncate(num);
+                        break;
+                    }
+                    const new_num = num % 100;
+                    numbers[i] = @truncate(new_num);
+                    num = num / 100;
+                }
+                if (is_nagative) {
+                    try writer.print("-₹ ", .{});
+                } else {
+                    try writer.print("₹ ", .{});
+                }
+                for (numbers) |n| {
+                    if (n <= 0) continue;
+                    try writer.print("{d},", .{n});
+                }
+                try writer.print("{d}.00 \n", .{hundred});
+            }
             if (try cli.getBoolArg("--word")) {
                 const word = try NumWord.floatToWord(allocator, output_num);
                 defer allocator.free(word);

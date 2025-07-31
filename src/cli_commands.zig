@@ -42,6 +42,12 @@ pub const myCLiCmdList = [_]CmdType{
                 .value = .{ .bool = null },
             },
             .{
+                .long = "--inr",
+                .short = "-i",
+                .info = "Prints the number in Indian rupee formate.",
+                .value = .{ .bool = false },
+            },
+            .{
                 .long = "--word",
                 .short = "-w",
                 .info = "Prints the number in words.",
