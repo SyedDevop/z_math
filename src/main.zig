@@ -25,6 +25,7 @@ const Volume = @import("./unit/volume.zig");
 const Tempe = @import("./unit/temp.zig");
 
 const NumWord = @import("num_words.zig");
+const fmtCurr = @import("rupees_formate.zig");
 
 const build_options = @import("build_options");
 
@@ -148,32 +149,9 @@ pub fn main() !void {
             try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
             try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
             if (try cli.getBoolArg("-i")) {
-                const is_nagative = if (output_num < 0.0) true else false; // if (output_num < 0) {}
-                const i_num: usize = @intFromFloat(@abs(output_num));
-                const hundred: usize = @mod(i_num, 1000); // @mod(output_num % 1000);
-                var num: usize = i_num / 1000;
-                var numbers: [8]u8 = undefined;
-                @memset(&numbers, 0);
-                var i: usize = 7;
-                while (num > 0 and i >= 0) : (i -= 1) {
-                    if (num < 100) {
-                        numbers[i] = @truncate(num);
-                        break;
-                    }
-                    const new_num = num % 100;
-                    numbers[i] = @truncate(new_num);
-                    num = num / 100;
-                }
-                if (is_nagative) {
-                    try answer_currency_style.render("-₹ ", writer);
-                } else {
-                    try answer_currency_style.render("₹ ", writer);
-                }
-                for (numbers) |n| {
-                    if (n <= 0) continue;
-                    try answer_currency_style.fmtRender("{d},", .{n}, writer);
-                }
-                try answer_currency_style.fmtRender("{d}.00 \n", .{hundred}, writer);
+                const nums = try fmtCurr.formateToRupees(allocator, output_num);
+                defer allocator.free(nums);
+                try answer_currency_style.fmtRender("{s}\n", .{nums}, writer);
             }
             if (try cli.getBoolArg("--word")) {
                 const word = try NumWord.floatToWord(allocator, output_num);
