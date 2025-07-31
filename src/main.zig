@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const evalStruct = @import("eval.zig");
 const ZAppError = @import("./errors.zig").ZAppErrors;
@@ -77,10 +78,16 @@ var answer_style: ZColor.Style = .{
         .doublyUnderline = true,
         .italic = true,
     },
-    .fgColor = ZColor.Red,
+    .fgColor = .toColor(192),
 };
 var answer_word_style: ZColor.Style = .{
-    .fgColor = ZColor.BrightBlack,
+    .fontStyle = .{ .bold = true },
+    .fgColor = .toColor(105),
+};
+
+var answer_currency_style: ZColor.Style = .{
+    .fontStyle = .{ .bold = true },
+    .fgColor = .toColor(84),
 };
 
 pub fn main() !void {
@@ -128,7 +135,8 @@ pub fn main() !void {
             const output = try std.fmt.allocPrint(allocator, "{d}", .{output_num});
             defer allocator.free(output);
 
-            _ = std.os.windows.kernel32.SetConsoleOutputCP(65001);
+            if (builtin.os.tag == .windows) _ = std.os.windows.kernel32.SetConsoleOutputCP(65001);
+
             var writer = std.io.getStdOut().writer();
 
             db.addExpr(input, output, "root", exe_id);
@@ -157,15 +165,15 @@ pub fn main() !void {
                     num = num / 100;
                 }
                 if (is_nagative) {
-                    try writer.print("-₹ ", .{});
+                    try answer_currency_style.render("-₹ ", writer);
                 } else {
-                    try writer.print("₹ ", .{});
+                    try answer_currency_style.render("₹ ", writer);
                 }
                 for (numbers) |n| {
                     if (n <= 0) continue;
-                    try writer.print("{d},", .{n});
+                    try answer_currency_style.fmtRender("{d},", .{n}, writer);
                 }
-                try writer.print("{d}.00 \n", .{hundred});
+                try answer_currency_style.fmtRender("{d}.00 \n", .{hundred}, writer);
             }
             if (try cli.getBoolArg("--word")) {
                 const word = try NumWord.floatToWord(allocator, output_num);
