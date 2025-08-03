@@ -20,41 +20,41 @@ fn place2Word(n: u8, writer: Writer) !void {
         try tenthWord(n, writer);
     }
 }
-fn tenthWord(n: u64, writer: Writer) !void {
+fn tenthWord(n: u128, writer: Writer) !void {
     const tens = (n / 10) * 10;
     const ones = n % 10;
     try writer.writeAll(getWord(@intCast(tens)));
     if (ones > 0) try writer.print("-{s}", .{getWord(@intCast(ones))});
 }
 
-fn hundredthWord(n: u64, writer: Writer) !void {
+fn hundredthWord(n: u128, writer: Writer) !void {
     try writer.print("{s} Hundred ", .{getWord(@intCast(n / 100))});
     const tenth = n % 100;
     if (tenth > 0) try tenthWord(tenth, writer);
 }
 
-fn thousandthWord(n: u64, writer: Writer) !void {
+fn thousandthWord(n: u128, writer: Writer) !void {
     const thousandth: u8 = @intCast(n / 1000);
     try place2Word(thousandth, writer);
     try writer.writeAll(" Thousand ");
     const hundredth = n % 1000;
     if (hundredth > 0) try hundredthWord(hundredth, writer);
 }
-fn lakh_word(n: u64, writer: Writer) !void {
+fn lakh_word(n: u128, writer: Writer) !void {
     const lakh: u8 = @intCast(n / 1_00_000);
     try place2Word(lakh, writer);
     try writer.writeAll(" Lakh ");
     try thousandthWord(n % 1_00_000, writer);
 }
 
-fn crore_word(n: u64, writer: Writer) !void {
+fn crore_word(n: u128, writer: Writer) !void {
     const crore: u8 = @intCast(n / 1_00_00_000);
     try place2Word(crore, writer);
     try writer.writeAll(" Crore ");
     try lakh_word(n % 1_00_00_000, writer);
 }
 
-fn toWords(n: u64, writer: Writer) !void {
+fn toWords(n: u128, writer: Writer) !void {
     if (n < 100) {
         try place2Word(@intCast(n), writer);
     } else if (n < 1_000) {
@@ -69,7 +69,7 @@ fn toWords(n: u64, writer: Writer) !void {
 }
 
 /// You need to free the string after you are done using it.
-pub fn numToWord(alloc: std.mem.Allocator, n: u64) ![]u8 {
+pub fn numToWord(alloc: std.mem.Allocator, n: u128) ![]u8 {
     var num_word = std.ArrayList(u8).init(alloc);
     const writer = num_word.writer();
     try toWords(n, writer);
@@ -77,16 +77,16 @@ pub fn numToWord(alloc: std.mem.Allocator, n: u64) ![]u8 {
 }
 
 /// You need to free the string after you are done using it.
-pub fn floatToWord(alloc: std.mem.Allocator, n: f64) ![]u8 {
+pub fn floatToWord(alloc: std.mem.Allocator, n: f128) ![]u8 {
     var num_word = std.ArrayList(u8).init(alloc);
     const writer = num_word.writer();
     if (n < 0) try writer.print("(negative) ", .{});
-    const whole_number: u64 = @intFromFloat(@abs(n));
+    const whole_number: u128 = @intFromFloat(@abs(n));
     try toWords(whole_number, writer);
     try writer.print(" Point ", .{});
 
-    const frac: f64 = @abs(n) - @as(f64, @floatFromInt(whole_number));
-    const fracAsInt: u64 = @intFromFloat(frac * 100);
+    const frac: f128 = @abs(n) - @as(f128, @floatFromInt(whole_number));
+    const fracAsInt: u128 = @intFromFloat(frac * 100);
     try toWords(fracAsInt, writer);
 
     return try num_word.toOwnedSlice();

@@ -132,7 +132,8 @@ pub fn main() !void {
             };
             var eval = Eval.init(&par.ast, allocator);
             defer eval.deinit();
-            const output_num = try eval.eval();
+            const output_num: f128 = try eval.eval();
+            // FIX: The number printed is not correct above sqr(114)
             const output = try std.fmt.allocPrint(allocator, "{d}", .{output_num});
             defer allocator.free(output);
 
