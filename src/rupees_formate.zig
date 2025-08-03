@@ -7,7 +7,7 @@ pub fn formateToRupees(alloc: Allocator, n: f128) ![]u8 {
     var num_fmt = std.ArrayList(u8).init(alloc);
     var num_fmt_w = num_fmt.writer();
 
-    const is_nagative = if (n < 0.0) true else false; // if (output_num < 0) {}
+    const is_negative = if (n < 0.0) true else false; // if (output_num < 0) {}
     const i_num: f128 = @abs(n);
     const hundred: f128 = @mod(n, 1000); // @mod(output_num % 1000);
     var num: f128 = i_num / 1000;
@@ -20,7 +20,7 @@ pub fn formateToRupees(alloc: Allocator, n: f128) ![]u8 {
         try numbers.append(@intFromFloat(new_num));
         num = num / 100;
     }
-    if (is_nagative) {
+    if (is_negative) {
         try num_fmt.appendSlice("-₹ ");
     } else {
         try num_fmt.appendSlice("₹ ");
