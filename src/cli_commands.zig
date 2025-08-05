@@ -43,9 +43,15 @@ pub const myCLiCmdList = [_]CmdType{
             },
             .{
                 .long = "--inr",
-                .short = "-i",
+                .short = "-in",
                 .info = "Prints the number in Indian rupee formate.",
                 .value = .{ .bool = false },
+            },
+            .{
+                .long = "--currency",
+                .short = "-c",
+                .info = "Converts amount to specified currency (default: INR→USD). Pass 'list' for available currencies.",
+                .value = .{ .str = "usd" },
             },
             .{
                 .long = "--word",

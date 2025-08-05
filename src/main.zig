@@ -26,7 +26,7 @@ const Tempe = @import("./unit/temp.zig");
 
 const NumWord = @import("num_words.zig");
 const fmtCurr = @import("rupees_formate.zig");
-
+const Exchange = @import("pkg/exchange_rate.zig");
 const build_options = @import("build_options");
 
 const USAGE =
@@ -149,6 +149,18 @@ pub fn main() !void {
 
             try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
             try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
+            if (try cli.getStrArg("--currency")) |cr| {
+                const curr = std.meta.stringToEnum(Exchange.Currency, cr) orelse {
+                    std.debug.print("Invalid Currency: {s}. Use --currency 'list' to get the list of available currency\n", .{cr});
+                    return;
+                };
+                switch (curr) {
+                    .list => try Exchange.Currency.printAvailable(writer),
+                    else => {
+                        print("Got Currency {s}: \n", .{cr});
+                    },
+                }
+            }
             if (try cli.getBoolArg("-i")) {
                 const nums = try fmtCurr.formateToRupees(allocator, output_num);
                 defer allocator.free(nums);
