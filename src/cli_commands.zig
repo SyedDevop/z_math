@@ -50,7 +50,7 @@ pub const myCLiCmdList = [_]CmdType{
             .{
                 .long = "--currency",
                 .short = "-c",
-                .info = "Converts amount to specified currency (default: INR→USD). Pass 'list' for available currencies.",
+                .info = "Converts amount from specified currency to INR (default: USD -> INR). Pass 'list' for available currencies.",
                 .value = .{ .str = "usd" },
             },
             .{

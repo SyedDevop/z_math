@@ -157,7 +157,10 @@ pub fn main() !void {
                 switch (curr) {
                     .list => try Exchange.Currency.printAvailable(writer),
                     else => {
-                        print("Got Currency {s}: \n", .{cr});
+                        const exchange_curr = try Exchange.rate(allocator, output_num, curr);
+                        const nums = try fmtCurr.formateToRupees(allocator, exchange_curr);
+                        defer allocator.free(nums);
+                        print("Exchange rate for {d} {s} is {s}\n", .{ output_num, @tagName(curr), nums });
                     },
                 }
             }
