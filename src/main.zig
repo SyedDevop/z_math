@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const build_options = @import("build_options");
 
 const evalStruct = @import("eval.zig");
 const ZAppError = @import("./errors.zig").ZAppErrors;
@@ -20,14 +21,15 @@ const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
 const ZColor = zarg.ZColor;
 
-const Length = @import("./unit/length.zig");
-const Volume = @import("./unit/volume.zig");
-const Tempe = @import("./unit/temp.zig");
+const unit = @import("unit/unit.zig");
+const Length = unit.Length;
+const Volume = unit.Volume;
+const Tempe = unit.Tempe;
 
-const NumWord = @import("num_words.zig");
-const fmtCurr = @import("rupees_formate.zig");
-
-const build_options = @import("build_options");
+const pkg = @import("pkg/pkg.zig");
+const NumWord = pkg.NumWord;
+const FmtCurr = pkg.FmtCurr;
+const Exchange = pkg.Exchange;
 
 const USAGE =
     \\CLI Calculator App
@@ -150,16 +152,84 @@ pub fn main() !void {
             try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
             try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
             if (try cli.getBoolArg("-i")) {
-                const nums = try fmtCurr.formateToRupees(allocator, output_num);
+                const nums = try FmtCurr.formateToRupees(allocator, output_num);
                 defer allocator.free(nums);
                 try answer_currency_style.fmtRender("{s}\n", .{nums}, writer);
             }
-            if (try cli.getBoolArg("--word")) {
+            const is_word_fmt = try cli.getBoolArg("--word");
+            if (is_word_fmt) {
                 const word = try NumWord.floatToWord(allocator, output_num);
                 defer allocator.free(word);
                 try answer_word_style.fmtRender("{s}\n", .{word}, writer);
             }
+            if (try cli.getStrArg("--currency")) |cr| {
+                const curr = std.meta.stringToEnum(Exchange.Currency, cr) orelse {
+                    std.debug.print("Invalid Currency: {s}. Use --currency 'list' to get the list of available currency\n", .{cr});
+                    return;
+                };
+                switch (curr) {
+                    .list => try Exchange.Currency.printAvailable(writer),
+                    else => {
+                        const exchange_curr = try Exchange.rate(allocator, output_num, curr, .inr);
+                        const nums = try FmtCurr.formateToRupees(allocator, exchange_curr);
+                        defer allocator.free(nums);
+                        print("Exchange rate for {d} {s} is {s}\n", .{ output_num, @tagName(curr), nums });
+                        if (is_word_fmt) {
+                            const word = try NumWord.floatToWord(allocator, exchange_curr);
+                            defer allocator.free(word);
+                            try answer_word_style.fmtRender("{s}\n", .{word}, writer);
+                        }
+                    },
+                }
+            }
             try writer.print("\n", .{});
+        },
+        .exchange => {
+            const writer = std.io.getStdOut().writer();
+            if (try cli.getBoolArg("--list")) {
+                try Exchange.Currency.printAvailable(writer);
+                return;
+            }
+            var from_curr: ?Exchange.Currency = null;
+            var to_curr: ?Exchange.Currency = null;
+            var num: f128 = 0;
+            while (lex.hasTokes()) {
+                const tok = try lex.nextToke();
+                switch (tok) {
+                    .word => |w| {
+                        const curr = std.meta.stringToEnum(Exchange.Currency, w) orelse {
+                            std.debug.print("Invalid Currency: {s}. Use --list or --help to get the list of available currency\n", .{w});
+                            return;
+                        };
+                        if (from_curr == null) {
+                            from_curr = curr;
+                        } else if (to_curr == null) {
+                            to_curr = curr;
+                        } else break;
+                    },
+                    .num => |n| num = n,
+                    else => {},
+                }
+            }
+            switch (from_curr.?) {
+                .list => try Exchange.Currency.printAvailable(writer),
+                else => {
+                    const exchange_curr = try Exchange.rate(allocator, num, from_curr.?, to_curr orelse .inr);
+                    print("Exchange rate for {d} {s} is ", .{ num, @tagName(from_curr.?) });
+                    if (to_curr == null or to_curr == .inr) {
+                        const nums = try FmtCurr.formateToRupees(allocator, exchange_curr);
+                        defer allocator.free(nums);
+                        print("{s}\n", .{nums});
+                    } else {
+                        print("{d:0>6.3}\n", .{exchange_curr});
+                    }
+                    if (try cli.getBoolArg("--word")) {
+                        const word = try NumWord.floatToWord(allocator, exchange_curr);
+                        defer allocator.free(word);
+                        try answer_word_style.fmtRender("{s}\n", .{word}, writer);
+                    }
+                },
+            }
         },
         .delete => {
             if (try cli.getStrArg("--range")) |range| {

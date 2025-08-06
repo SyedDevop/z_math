@@ -7,6 +7,7 @@ const WORDS = [28][]const u8{
     "Eighteen", "Nineteen", "Twenty",   "Thirty",  "Forty",   "Fifty",
     "Sixty",    "Seventy",  "Eighty",   "Ninety",
 };
+
 const Writer = std.ArrayList(u8).Writer;
 const NumErrors = error{NumberRangeNotSupported};
 inline fn getWord(n: u8) []const u8 {
