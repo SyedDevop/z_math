@@ -184,6 +184,53 @@ pub fn main() !void {
             }
             try writer.print("\n", .{});
         },
+        .exchange => {
+            const writer = std.io.getStdOut().writer();
+            if (try cli.getBoolArg("--list")) {
+                try Exchange.Currency.printAvailable(writer);
+                return;
+            }
+            var from_curr: ?Exchange.Currency = null;
+            var to_curr: ?Exchange.Currency = null;
+            var num: f128 = 0;
+            while (lex.hasTokes()) {
+                const tok = try lex.nextToke();
+                switch (tok) {
+                    .word => |w| {
+                        const curr = std.meta.stringToEnum(Exchange.Currency, w) orelse {
+                            std.debug.print("Invalid Currency: {s}. Use --list or --help to get the list of available currency\n", .{w});
+                            return;
+                        };
+                        if (from_curr == null) {
+                            from_curr = curr;
+                        } else if (to_curr == null) {
+                            to_curr = curr;
+                        } else break;
+                    },
+                    .num => |n| num = n,
+                    else => {},
+                }
+            }
+            switch (from_curr.?) {
+                .list => try Exchange.Currency.printAvailable(writer),
+                else => {
+                    const exchange_curr = try Exchange.rate(allocator, num, from_curr.?, to_curr orelse .inr);
+                    print("Exchange rate for {d} {s} is ", .{ num, @tagName(from_curr.?) });
+                    if (to_curr == null or to_curr == .inr) {
+                        const nums = try FmtCurr.formateToRupees(allocator, exchange_curr);
+                        defer allocator.free(nums);
+                        print("{s}\n", .{nums});
+                    } else {
+                        print("{d:0>6.3}\n", .{exchange_curr});
+                    }
+                    if (try cli.getBoolArg("--word")) {
+                        const word = try NumWord.floatToWord(allocator, exchange_curr);
+                        defer allocator.free(word);
+                        try answer_word_style.fmtRender("{s}\n", .{word}, writer);
+                    }
+                },
+            }
+        },
         .delete => {
             if (try cli.getStrArg("--range")) |range| {
                 var ranges = std.mem.splitSequence(u8, range, "..");

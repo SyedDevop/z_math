@@ -4,33 +4,37 @@ const Allocator = std.mem.Allocator;
 const http = std.http;
 
 var curr_array = std.EnumArray(Currency, []const u8).initDefault(null, .{
-    .inr = "Indian Rupee",
-    .usd = "US Dollar",
+    .aed = "United Arab Emirates Dirham",
+    .aud = "Australian Dollar",
     .btc = "Bitcoin",
+    .cnh = "Chinese Yuan Renminbi Offshore",
+    .cny = "Chinese Yuan Renminbi",
     .etc = "Ethereum Classic",
     .eth = "Ethereum",
     .eur = "Euro",
-    .aed = "United Arab Emirates Dirham",
+    .gbp = "British Pound",
+    .inr = "Indian Rupee",
+    .jpy = "Japanese Yen",
     .qar = "Qatari Riyal",
     .sar = "Saudi Arabian Riyal",
-    .cnh = "Chinese Yuan Renminbi Offshore",
-    .cny = "Chinese Yuan Renminbi",
-    .jpy = "Japanese Yen",
+    .usd = "US Dollar",
     .list = "List",
 });
 pub const Currency = enum {
-    inr,
-    usd,
+    aed,
+    aud,
     btc,
+    cnh,
+    cny,
     etc,
     eth,
     eur,
-    aed,
+    gbp,
+    inr,
+    jpy,
     qar,
     sar,
-    cnh,
-    cny,
-    jpy,
+    usd,
     list,
 
     pub fn printAvailable(writer: anytype) !void {
@@ -53,6 +57,7 @@ fn generateUrl(alloc: Allocator, curr: Currency) ![]u8 {
     return try std.fmt.allocPrint(alloc, "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{s}.min.json", .{@tagName(curr)});
 }
 pub fn rate(alloc: Allocator, amount: f128, from_curr: Currency, to_curr: Currency) !f128 {
+    std.debug.print("[Info]: from_curr({s}) to_curr({s})\n", .{ @tagName(from_curr), @tagName(to_curr) });
     var arena = std.heap.ArenaAllocator.init(alloc);
     const arena_alloc = arena.allocator();
     defer arena.deinit();
@@ -80,7 +85,11 @@ pub fn rate(alloc: Allocator, amount: f128, from_curr: Currency, to_curr: Curren
             if (keys.len < 2) return error.CurrencyNotFound;
             switch (obj.get(keys[1]).?) {
                 .object => |*curr_obj| {
-                    const inr = curr_obj.get(@tagName(to_curr)).?.float;
+                    const inr: f64 = switch (curr_obj.get(@tagName(to_curr)).?) {
+                        .float => |f| f,
+                        .integer => |i| @floatFromInt(i),
+                        else => 0.0,
+                    };
                     return inr * amount;
                 },
                 else => return error.InvalidCurrJSON,

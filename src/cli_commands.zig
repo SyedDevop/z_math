@@ -4,14 +4,15 @@ const Allocator = std.mem.Allocator;
 
 pub const MyCLiCmds = enum {
     root,
-    length,
     area,
-    history,
-    delete,
     completion,
-    volume,
-    temp,
     config,
+    delete,
+    exchange,
+    history,
+    length,
+    temp,
+    volume,
 
     pub fn getCmdNameList(alloc: Allocator) ![]const u8 {
         var result = std.ArrayList(u8).init(alloc);
@@ -68,6 +69,42 @@ pub const myCLiCmdList = [_]CmdType{
         },
     },
 
+    CmdType{
+        .name = .exchange,
+        .usage =
+        \\exchange [OPTIONS] "FROM_CURRENCY: VALUE[: TO_CURRENCY]"
+        \\
+        \\Arguments:
+        \\  <FROM_CURRENCY>  3-letter currency code (e.g. usd)
+        \\  <VALUE>          Amount to convert (decimal number)
+        \\  [TO_CURRENCY]    Optional target currency (default: inr)
+        \\Special Commands:
+        \\  list             Show all available currencies
+        ,
+        .info = "Convert values between different currencies using real-time exchange rates.",
+        .example =
+        \\ m exchange "usd: 100"        # Convert 100 USD to INR (default)
+        \\   m exchange "usd 100"         # Convert 100 USD to INR (default)
+        \\   m exchange "eur 50 jpy"      # Convert 50 EUR to Japanese Yen
+        \\   m exchange "gbp: 25.5: aud"  # Convert 25.5 GBP to Australian Dollars
+        \\   m exchange "list"            # Show all available currencies
+        ,
+        .print_help_for_min_pos_arg = true,
+        .options = &.{
+            .{
+                .long = "--word",
+                .short = "-w",
+                .info = "Prints the number in words.",
+                .value = .{ .bool = null },
+            },
+            .{
+                .long = "--list",
+                .short = "-l",
+                .info = "Lists all available currencies.",
+                .value = .{ .bool = null },
+            },
+        },
+    },
     CmdType{
         .name = .length,
         .usage = "m lenght [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
