@@ -52,7 +52,7 @@ const EIGHT_KB = ONE_KB * 8;
 fn generateUrl(alloc: Allocator, curr: Currency) ![]u8 {
     return try std.fmt.allocPrint(alloc, "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{s}.min.json", .{@tagName(curr)});
 }
-pub fn rate(alloc: Allocator, amount: f128, curr: Currency) !f128 {
+pub fn rate(alloc: Allocator, amount: f128, from_curr: Currency, to_curr: Currency) !f128 {
     var arena = std.heap.ArenaAllocator.init(alloc);
     const arena_alloc = arena.allocator();
     defer arena.deinit();
@@ -60,7 +60,7 @@ pub fn rate(alloc: Allocator, amount: f128, curr: Currency) !f128 {
     var client = http.Client{ .allocator = arena_alloc };
     defer client.deinit();
 
-    const url = try generateUrl(arena_alloc, curr);
+    const url = try generateUrl(arena_alloc, from_curr);
 
     const uri = try std.Uri.parse(url);
     var buf: [TWO_KB]u8 = undefined;
@@ -80,7 +80,7 @@ pub fn rate(alloc: Allocator, amount: f128, curr: Currency) !f128 {
             if (keys.len < 2) return error.CurrencyNotFound;
             switch (obj.get(keys[1]).?) {
                 .object => |*curr_obj| {
-                    const inr = curr_obj.get("inr").?.float;
+                    const inr = curr_obj.get(@tagName(to_curr)).?.float;
                     return inr * amount;
                 },
                 else => return error.InvalidCurrJSON,

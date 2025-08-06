@@ -149,6 +149,17 @@ pub fn main() !void {
 
             try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
             try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
+            if (try cli.getBoolArg("-i")) {
+                const nums = try fmtCurr.formateToRupees(allocator, output_num);
+                defer allocator.free(nums);
+                try answer_currency_style.fmtRender("{s}\n", .{nums}, writer);
+            }
+            const is_word_fmt = try cli.getBoolArg("--word");
+            if (is_word_fmt) {
+                const word = try NumWord.floatToWord(allocator, output_num);
+                defer allocator.free(word);
+                try answer_word_style.fmtRender("{s}\n", .{word}, writer);
+            }
             if (try cli.getStrArg("--currency")) |cr| {
                 const curr = std.meta.stringToEnum(Exchange.Currency, cr) orelse {
                     std.debug.print("Invalid Currency: {s}. Use --currency 'list' to get the list of available currency\n", .{cr});
@@ -157,22 +168,17 @@ pub fn main() !void {
                 switch (curr) {
                     .list => try Exchange.Currency.printAvailable(writer),
                     else => {
-                        const exchange_curr = try Exchange.rate(allocator, output_num, curr);
+                        const exchange_curr = try Exchange.rate(allocator, output_num, curr, .inr);
                         const nums = try fmtCurr.formateToRupees(allocator, exchange_curr);
                         defer allocator.free(nums);
                         print("Exchange rate for {d} {s} is {s}\n", .{ output_num, @tagName(curr), nums });
+                        if (is_word_fmt) {
+                            const word = try NumWord.floatToWord(allocator, exchange_curr);
+                            defer allocator.free(word);
+                            try answer_word_style.fmtRender("{s}\n", .{word}, writer);
+                        }
                     },
                 }
-            }
-            if (try cli.getBoolArg("-i")) {
-                const nums = try fmtCurr.formateToRupees(allocator, output_num);
-                defer allocator.free(nums);
-                try answer_currency_style.fmtRender("{s}\n", .{nums}, writer);
-            }
-            if (try cli.getBoolArg("--word")) {
-                const word = try NumWord.floatToWord(allocator, output_num);
-                defer allocator.free(word);
-                try answer_word_style.fmtRender("{s}\n", .{word}, writer);
             }
             try writer.print("\n", .{});
         },
