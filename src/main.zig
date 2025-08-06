@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const build_options = @import("build_options");
 
 const evalStruct = @import("eval.zig");
 const ZAppError = @import("./errors.zig").ZAppErrors;
@@ -20,14 +21,15 @@ const Lexer = lexer.Lexer;
 const Eval = evalStruct.Eval;
 const ZColor = zarg.ZColor;
 
-const Length = @import("./unit/length.zig");
-const Volume = @import("./unit/volume.zig");
-const Tempe = @import("./unit/temp.zig");
+const unit = @import("unit/unit.zig");
+const Length = unit.Length;
+const Volume = unit.Volume;
+const Tempe = unit.Tempe;
 
-const NumWord = @import("num_words.zig");
-const fmtCurr = @import("rupees_formate.zig");
-const Exchange = @import("pkg/exchange_rate.zig");
-const build_options = @import("build_options");
+const pkg = @import("pkg/pkg.zig");
+const NumWord = pkg.NumWord;
+const FmtCurr = pkg.FmtCurr;
+const Exchange = pkg.Exchange;
 
 const USAGE =
     \\CLI Calculator App
@@ -150,7 +152,7 @@ pub fn main() !void {
             try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
             try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
             if (try cli.getBoolArg("-i")) {
-                const nums = try fmtCurr.formateToRupees(allocator, output_num);
+                const nums = try FmtCurr.formateToRupees(allocator, output_num);
                 defer allocator.free(nums);
                 try answer_currency_style.fmtRender("{s}\n", .{nums}, writer);
             }
@@ -169,7 +171,7 @@ pub fn main() !void {
                     .list => try Exchange.Currency.printAvailable(writer),
                     else => {
                         const exchange_curr = try Exchange.rate(allocator, output_num, curr, .inr);
-                        const nums = try fmtCurr.formateToRupees(allocator, exchange_curr);
+                        const nums = try FmtCurr.formateToRupees(allocator, exchange_curr);
                         defer allocator.free(nums);
                         print("Exchange rate for {d} {s} is {s}\n", .{ output_num, @tagName(curr), nums });
                         if (is_word_fmt) {
