@@ -211,6 +211,7 @@ pub fn main() !void {
                     else => {},
                 }
             }
+            if (from_curr == null) from_curr = .usd;
             switch (from_curr.?) {
                 .list => try Exchange.Currency.printAvailable(writer),
                 else => {
