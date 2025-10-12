@@ -58,6 +58,7 @@ fn generateUrl(alloc: Allocator, curr: Currency) ![]u8 {
 }
 pub fn rate(alloc: Allocator, amount: f128, from_curr: Currency, to_curr: Currency) !f128 {
     std.debug.print("[Info]: from_curr({s}) to_curr({s})\n", .{ @tagName(from_curr), @tagName(to_curr) });
+
     var arena = std.heap.ArenaAllocator.init(alloc);
     const arena_alloc = arena.allocator();
     defer arena.deinit();
@@ -68,13 +69,18 @@ pub fn rate(alloc: Allocator, amount: f128, from_curr: Currency, to_curr: Curren
     const url = try generateUrl(arena_alloc, from_curr);
 
     const uri = try std.Uri.parse(url);
-    var req = try client.request(.GET, uri, .{});
+    var req = try client.request(.GET, uri, .{
+        .headers = .{
+            .accept_encoding = .{ .override = "text/plain" },
+        },
+    });
     defer req.deinit();
-    try req.sendBodiless();
-    const req_reader = &req.reader.interface;
 
-    // var jws = std.json.reader(alloc, req.reader());
-    var jws = std.json.Reader.init(alloc, req_reader);
+    try req.sendBodiless();
+    var response = try req.receiveHead(&.{});
+    var reader_buffer: [EIGHT_KB]u8 = undefined;
+    const body_reader = response.reader(&reader_buffer);
+    var jws = std.json.Reader.init(arena_alloc, body_reader);
     defer jws.deinit();
     const va = try std.json.Value.jsonParse(arena_alloc, &jws, .{ .max_value_len = EIGHT_KB });
     return switch (va) {
