@@ -159,22 +159,22 @@ pub const Parser = struct {
             },
             .illegal => |il| {
                 try self.nextToken();
-                var s = std.ArrayList(u8).init(self.alloc);
-                defer s.deinit();
+                var s = std.ArrayList(u8).empty;
+                defer s.deinit(self.alloc);
 
                 // 16 is the prefix for the input print at start.
                 for (0..il.st_pos + 9) |_| {
-                    try s.append(' ');
+                    try s.append(self.alloc, ' ');
                 }
 
                 if (il.st_pos != il.en_pos) {
                     for (0..(il.en_pos - il.st_pos) - 1) |_| {
-                        try s.append('^');
+                        try s.append(self.alloc, '^');
                     }
                 }
 
-                try s.appendSlice("^ Found illegal character");
-                const mess = try s.toOwnedSlice();
+                try s.appendSlice(self.alloc, "^ Found illegal character");
+                const mess = try s.toOwnedSlice(self.alloc);
                 try self.errors.append(self.alloc, .{ .message_alloced = true, .message = mess });
                 return 0;
             },

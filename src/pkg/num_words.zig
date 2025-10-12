@@ -79,8 +79,8 @@ pub fn numToWord(alloc: std.mem.Allocator, n: u128) ![]u8 {
 
 /// You need to free the string after you are done using it.
 pub fn floatToWord(alloc: std.mem.Allocator, n: f128) ![]u8 {
-    var num_word = std.ArrayList(u8).init(alloc);
-    const writer = num_word.writer();
+    var num_word = std.ArrayList(u8).empty;
+    const writer = num_word.writer(alloc);
     if (n < 0) try writer.print("(negative) ", .{});
     const whole_number: u128 = @intFromFloat(@abs(n));
     try toWords(whole_number, writer);
@@ -90,7 +90,7 @@ pub fn floatToWord(alloc: std.mem.Allocator, n: f128) ![]u8 {
     const fracAsInt: u128 = @intFromFloat(frac * 100);
     try toWords(fracAsInt, writer);
 
-    return try num_word.toOwnedSlice();
+    return try num_word.toOwnedSlice(alloc);
 }
 
 // pub fn main() !void {

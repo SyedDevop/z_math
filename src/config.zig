@@ -62,27 +62,30 @@ pub fn init(b: *std.Build) !Self {
 pub fn addLibs(self: *const Self, exe: *std.Build.Step.Compile, b: *std.Build) void {
     _ = self;
 
-    exe.addIncludePath(b.path("lib"));
+    //   exe.addIncludePath(b.path("lib"));
     // Add sqlite3;
-    exe.addCSourceFile(.{ .file = b.path("lib/sqlite3.c"), .flags = &.{
-        "-DSQLITE_DQS=0",
-        "-DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1",
-        "-DSQLITE_USE_ALLOCA=1",
-        "-DSQLITE_THREADSAFE=1",
-        "-DSQLITE_TEMP_STORE=3",
-        "-DSQLITE_ENABLE_API_ARMOR=1",
-        "-DSQLITE_ENABLE_UNLOCK_NOTIFY",
-        "-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1",
-        "-DSQLITE_DEFAULT_FILE_PERMISSIONS=0600",
-        "-DSQLITE_OMIT_DECLTYPE=1",
-        "-DSQLITE_OMIT_DEPRECATED=1",
-        "-DSQLITE_OMIT_LOAD_EXTENSION=1",
-        "-DSQLITE_OMIT_PROGRESS_CALLBACK=1",
-        "-DSQLITE_OMIT_SHARED_CACHE",
-        "-DSQLITE_OMIT_TRACE=1",
-        "-DSQLITE_OMIT_UTF16=1",
-        "-DHAVE_USLEEP=0",
-    } });
+    exe.addCSourceFile(.{
+        .file = b.path("lib/sqlite3.c"),
+        .flags = &[_][]const u8{
+            "-DSQLITE_DQS=0",
+            "-DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1",
+            "-DSQLITE_USE_ALLOCA=1",
+            "-DSQLITE_THREADSAFE=1",
+            "-DSQLITE_TEMP_STORE=3",
+            "-DSQLITE_ENABLE_API_ARMOR=1",
+            "-DSQLITE_ENABLE_UNLOCK_NOTIFY",
+            "-DSQLITE_ENABLE_UPDATE_DELETE_LIMIT=1",
+            "-DSQLITE_DEFAULT_FILE_PERMISSIONS=0600",
+            "-DSQLITE_OMIT_DECLTYPE=1",
+            "-DSQLITE_OMIT_DEPRECATED=1",
+            "-DSQLITE_OMIT_LOAD_EXTENSION=1",
+            "-DSQLITE_OMIT_PROGRESS_CALLBACK=1",
+            "-DSQLITE_OMIT_SHARED_CACHE",
+            "-DSQLITE_OMIT_TRACE=1",
+            "-DSQLITE_OMIT_UTF16=1",
+            "-DHAVE_USLEEP=0",
+        },
+    });
 }
 
 pub fn addOptions(self: *const Self, step: *std.Build.Step.Options) !void {
@@ -95,7 +98,7 @@ pub fn addOptions(self: *const Self, step: *std.Build.Step.Options) !void {
     step.addOption(std.SemanticVersion, "version", self.version);
     step.addOption([:0]const u8, "version_string", try std.fmt.bufPrintZ(
         &buf,
-        "{}",
+        "{f}",
         .{self.version},
     ));
 }

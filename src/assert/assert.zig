@@ -5,10 +5,10 @@ const print = std.debug.print;
 fn clear() void {
     std.debug.print("\x1b[?25h", .{});
     std.debug.print("\x1b[0m", .{});
-    _ = std.io.getStdOut().write("\x1b[?25h") catch |e| {
+    _ = std.fs.File.stdout().write("\x1b[?25h") catch |e| {
         std.debug.print("error while clearing stdout: {}\n", .{e});
     };
-    _ = std.io.getStdOut().write("\x1b[0m") catch |e| {
+    _ = std.fs.File.stdout().write("\x1b[0m") catch |e| {
         std.debug.print("error while clearing stdout: {}\n", .{e});
     };
 }

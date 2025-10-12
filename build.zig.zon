@@ -4,12 +4,12 @@
     .fingerprint = 0x295b0c4f9ce847d0,
     .dependencies = .{
         .zqlite = .{
-            .url = "git+https://github.com/karlseguin/zqlite.zig?ref=master#ee7799b5bf138444986396966fb5f82c890a432b",
-            .hash = "zqlite-0.0.0-RWLaYxJ_lQBh1RLy13q2qJd5W8R6stUnMiARabnK6OnX",
+            .url = "git+https://github.com/karlseguin/zqlite.zig?ref=master#74e661633ffe04fadc214ad07857633fa339f79c",
+            .hash = "zqlite-0.0.0-RWLaY81-lQAbR_uUQJeKmTzYi16C9Zvl-BjrBOavQfeK",
         },
         .zarg = .{
-            .url = "git+https://github.com/SyedDevop/zarg#e7df2c4cd4503210fcd9db618d8ab57a86b8c944",
-            .hash = "zarg-0.1.0-x4gzxQrsAAAx5uplUp-7A4lAO9pMvq6bk1TNJHVS2UnB",
+            .url = "git+https://github.com/SyedDevop/zarg.git?ref=main#b24c5ae4ecf85510686c61852d4cf3809fd15cc9",
+            .hash = "zarg-0.1.0-x4gzxTc7AQA1C0jhRB4sbYTy5fKQ3Rmcdbj6m9Oe7Z2J",
         },
     },
     .paths = .{

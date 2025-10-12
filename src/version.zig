@@ -1,9 +1,9 @@
 const std = @import("std");
 const build_option = @import("build_options");
 const builtin = @import("builtin");
-const sql = @cImport({
-    @cInclude("sqlite3.h");
-});
+// const sql = @cImport({
+//     @cInclude("sqlite3.h");
+// });
 
 pub fn print() !void {
     const stdout = std.io.getStdOut().writer();
@@ -16,7 +16,7 @@ pub fn print() !void {
     try stdout.print("Build Config\n", .{});
     try stdout.print("  - Zig version    : {s}\n", .{builtin.zig_version_string});
     try stdout.print("  - build mode     : {}\n", .{builtin.mode});
-    try stdout.print("  - Sqlite version : {s}\n", .{sql.sqlite3_version});
+    //   try stdout.print("  - Sqlite version : {s}\n", .{sql.sqlite3_version});
 }
 
 pub fn comptimeStr() []const u8 {

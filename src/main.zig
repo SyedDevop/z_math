@@ -1,25 +1,30 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const build_options = @import("build_options");
+const print = std.debug.print;
 
-const evalStruct = @import("eval.zig");
 const ZAppError = @import("./errors.zig").ZAppErrors;
 const assert = @import("./assert/assert.zig").assert;
-const parser = @import("./parser.zig");
-const lexer = @import("./lexer.zig");
 const Order = @import("./db/sql_query.zig").Order;
 const Token = @import("./token.zig").Token;
-const zarg = @import("zarg");
-const CliCmds = @import("cli_commands.zig");
 const Db = @import("./db/db.zig").DB;
 const utils = @import("./utils.zig");
 const Version = @import("version.zig");
 
-const Parser = parser.Parser;
-const print = std.debug.print;
-const Lexer = lexer.Lexer;
+const evalStruct = @import("eval.zig");
 const Eval = evalStruct.Eval;
-const ZColor = zarg.ZColor;
+
+const parser = @import("./parser.zig");
+const Parser = parser.Parser;
+
+const lexer = @import("./lexer.zig");
+const Lexer = lexer.Lexer;
+
+const CliCmds = @import("cli_commands.zig");
+const zarg = @import("zarg");
+const Cli = zarg.Cli;
+const Style = zarg.Style;
+const Color = zarg.Style.Color;
 
 const unit = @import("unit/unit.zig");
 const Length = unit.Length;
@@ -65,34 +70,24 @@ const AUTOCOMPLETION =
     \\ complete -F _m_cli_autocomplete m
 ;
 
-fn genVersion(version_form: zarg.VersionCallFrom) []const u8 {
+const cmds = @import("./cmds/cmds.zig");
+const Calculation = cmds.Calculation;
+
+var stdout_buffer: [1024]u8 = undefined;
+var stdout_io = std.fs.File.stdout().writer(&stdout_buffer);
+var stdout = &stdout_io.interface;
+
+var answer_word_style: Style = .{
+    .fontStyle = .{ .bold = true },
+    .fgColor = .toColor(105),
+};
+
+fn genVersion(version_form: Cli.VersionCallFrom) []const u8 {
     return switch (version_form) {
         .version => Version.comptimeStr(),
         .help => build_options.version_string,
     };
 }
-
-var header_style: ZColor.Style = .{
-    .fgColor = ZColor.BrightCyan,
-};
-
-var answer_style: ZColor.Style = .{
-    .fontStyle = .{
-        .doublyUnderline = true,
-        .italic = true,
-    },
-    .fgColor = .toColor(192),
-};
-var answer_word_style: ZColor.Style = .{
-    .fontStyle = .{ .bold = true },
-    .fgColor = .toColor(105),
-};
-
-var answer_currency_style: ZColor.Style = .{
-    .fontStyle = .{ .bold = true },
-    .fgColor = .toColor(84),
-};
-
 pub fn main() !void {
     const exe_id = std.crypto.random.intRangeAtMost(u64, 1000, 15000);
 
@@ -103,7 +98,7 @@ pub fn main() !void {
     var db = try Db.init(allocator);
     defer db.deinit();
 
-    var cli = try zarg.Cli(CliCmds.MyCLiCmds).init(
+    var cli = try Cli.CliInit(CliCmds.MyCLiCmds).init(
         allocator,
         "Z Math",
         USAGE,
@@ -120,74 +115,19 @@ pub fn main() !void {
     const input = try cli.getAllPosArgAsStr() orelse "";
     defer allocator.free(input);
     var lex = Lexer.init(input, allocator);
-
+    defer stdout.flush() catch unreachable;
     switch (cli.running_cmd.name) {
         .root => {
-            // FIX: error out on words,
-            var par = try Parser.init(input, &lex, allocator);
-            defer par.deinit();
-            try par.parse();
-
-            par.evaluate_errors(input) catch |e| {
-                if (e == ZAppError.exit) return;
-                return e;
+            var calculation = Calculation.init(allocator, input);
+            _ = calculation.compute(&lex) catch |err| {
+                if (err == ZAppError.exit) return;
+                return err;
             };
-            var eval = Eval.init(&par.ast, allocator);
-            defer eval.deinit();
-            const output_num: f128 = try eval.eval();
-            // FIX: The number printed is not correct above sqr(114)
-            const output = try std.fmt.allocPrint(allocator, "{d}", .{output_num});
-            defer allocator.free(output);
-
-            if (builtin.os.tag == .windows) _ = std.os.windows.kernel32.SetConsoleOutputCP(65001);
-
-            var writer = std.io.getStdOut().writer();
-
-            db.addExpr(input, output, "root", exe_id);
-            if (try cli.getBoolArg("--raw")) {
-                try writer.print("{s}", .{output});
-                return;
-            }
-
-            try header_style.fmtRender("The input is :: {s} ::\n", .{input}, writer);
-            try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
-            if (try cli.getBoolArg("-i")) {
-                const nums = try FmtCurr.formateToRupees(allocator, output_num);
-                defer allocator.free(nums);
-                try answer_currency_style.fmtRender("{s}\n", .{nums}, writer);
-            }
-            const is_word_fmt = try cli.getBoolArg("--word");
-            if (is_word_fmt) {
-                const word = try NumWord.floatToWord(allocator, output_num);
-                defer allocator.free(word);
-                try answer_word_style.fmtRender("{s}\n", .{word}, writer);
-            }
-            if (try cli.getStrArg("--currency")) |cr| {
-                const curr = std.meta.stringToEnum(Exchange.Currency, cr) orelse {
-                    std.debug.print("Invalid Currency: {s}. Use --currency 'list' to get the list of available currency\n", .{cr});
-                    return;
-                };
-                switch (curr) {
-                    .list => try Exchange.Currency.printAvailable(writer),
-                    else => {
-                        const exchange_curr = try Exchange.rate(allocator, output_num, curr, .inr);
-                        const nums = try FmtCurr.formateToRupees(allocator, exchange_curr);
-                        defer allocator.free(nums);
-                        print("Exchange rate for {d} {s} is {s}\n", .{ output_num, @tagName(curr), nums });
-                        if (is_word_fmt) {
-                            const word = try NumWord.floatToWord(allocator, exchange_curr);
-                            defer allocator.free(word);
-                            try answer_word_style.fmtRender("{s}\n", .{word}, writer);
-                        }
-                    },
-                }
-            }
-            try writer.print("\n", .{});
+            try calculation.dump(&cli.computed_args, &db, exe_id, stdout);
         },
         .exchange => {
-            const writer = std.io.getStdOut().writer();
             if (try cli.getBoolArg("--list")) {
-                try Exchange.Currency.printAvailable(writer);
+                try Exchange.Currency.printAvailable(stdout);
                 return;
             }
             var from_curr: ?Exchange.Currency = null;
@@ -213,7 +153,7 @@ pub fn main() !void {
             }
             if (from_curr == null) from_curr = .usd;
             switch (from_curr.?) {
-                .list => try Exchange.Currency.printAvailable(writer),
+                .list => try Exchange.Currency.printAvailable(stdout),
                 else => {
                     const exchange_curr = try Exchange.rate(allocator, num, from_curr.?, to_curr orelse .inr);
                     print("Exchange rate for {d} {s} is ", .{ num, @tagName(from_curr.?) });
@@ -227,7 +167,7 @@ pub fn main() !void {
                     if (try cli.getBoolArg("--word")) {
                         const word = try NumWord.floatToWord(allocator, exchange_curr);
                         defer allocator.free(word);
-                        try answer_word_style.fmtRender("{s}\n", .{word}, writer);
+                        try answer_word_style.fmtRender("{s}\n", .{word}, stdout);
                     }
                 },
             }

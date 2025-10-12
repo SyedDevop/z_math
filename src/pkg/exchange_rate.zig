@@ -68,16 +68,14 @@ pub fn rate(alloc: Allocator, amount: f128, from_curr: Currency, to_curr: Curren
     const url = try generateUrl(arena_alloc, from_curr);
 
     const uri = try std.Uri.parse(url);
-    var buf: [TWO_KB]u8 = undefined;
-    var req = try client.open(.GET, uri, .{ .server_header_buffer = &buf });
+    var req = try client.request(.GET, uri, .{});
     defer req.deinit();
-    try req.send();
-    try req.finish();
-    try req.wait();
+    try req.sendBodiless();
+    const req_reader = &req.reader.interface;
 
-    var jws = std.json.reader(alloc, req.reader());
+    // var jws = std.json.reader(alloc, req.reader());
+    var jws = std.json.Reader.init(alloc, req_reader);
     defer jws.deinit();
-
     const va = try std.json.Value.jsonParse(arena_alloc, &jws, .{ .max_value_len = EIGHT_KB });
     return switch (va) {
         .object => |*obj| {

@@ -15,18 +15,18 @@ pub const MyCLiCmds = enum {
     volume,
 
     pub fn getCmdNameList(alloc: Allocator) ![]const u8 {
-        var result = std.ArrayList(u8).init(alloc);
+        var result = std.ArrayList(u8).empty;
         inline for (@typeInfo(MyCLiCmds).@"enum".fields) |field| {
             if (field.value == 0) continue;
-            try result.appendSlice(field.name);
-            try result.append(' ');
+            try result.appendSlice(alloc, field.name);
+            try result.append(alloc, ' ');
         }
 
-        return result.toOwnedSlice(); // Return only the filled portion of the array
+        return result.toOwnedSlice(alloc); // Return only the filled portion of the array
     }
 };
 
-pub const CmdType = zarg.Cmd(MyCLiCmds);
+pub const CmdType = zarg.Cli.Cmd(MyCLiCmds);
 
 pub const myCLiCmdList = [_]CmdType{
     CmdType{

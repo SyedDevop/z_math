@@ -18,6 +18,7 @@ units directly from the terminal.
     - [Area](#area)
   - [Bash Auto Completion](#bash-auto-completion)
   - [TODO](#todo)
+  - [Check Things](#check-things)
   - [REF](#ref)
   <!--toc:end-->
 
@@ -92,11 +93,15 @@ Ans: 0.01 sqkm
 ## Bash Auto Completion
 
 ```console
-$ m completion &> ./zig-out/comp_m
-$ sudo cp -v  ./zig-out/comp_m /usr/share/bash-completion/completions/m
+m completion &> ./zig-out/comp_m
+sudo cp -v  ./zig-out/comp_m /usr/share/bash-completion/completions/m
 ```
 
 ## TODO
+
+- ## Check Things
+
+  - arbitrary precision numbers
 
 ## REF
 

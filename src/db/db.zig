@@ -82,7 +82,7 @@ pub const DB = struct {
         };
     }
     pub fn getAllExprs(self: *Self, order: sql.Order) ![]Expr {
-        var result = std.ArrayList(Expr).init(self.alloc);
+        var result = std.ArrayList(Expr).empty;
         var rows = self.conn.rows(try sql.allExpersQuery(order), .{}) catch {
             std.debug.print("[ERROR]: getAllEzprs#conn {s}\n", .{self.conn.lastError()});
             std.process.exit(1);
@@ -102,16 +102,16 @@ pub const DB = struct {
                 .execution_id = try self.alloc.dupe(u8, row.text(4)),
                 .created_at = try self.alloc.dupe(u8, row.text(5)),
             };
-            try result.append(v);
+            try result.append(self.alloc, v);
         }
-        return try result.toOwnedSlice();
+        return try result.toOwnedSlice(self.alloc);
     }
     /// Default Options for [getEzprs]
     /// Options
     ///  limit: u64 = 5,
     ///  order: Order = .DESC,
     pub fn getExprs(self: *Self, opt: sql.Options) ![]Expr {
-        var result = std.ArrayList(Expr).init(self.alloc);
+        var result = std.ArrayList(Expr).empty;
         var rows = self.conn.rows(try sql.expersQuery(opt), .{}) catch {
             std.debug.print("[ERROR]: getEzprs#conn {s}\n", .{self.conn.lastError()});
             std.process.exit(1);
@@ -131,9 +131,9 @@ pub const DB = struct {
                 .execution_id = try self.alloc.dupe(u8, row.text(4)),
                 .created_at = try self.alloc.dupe(u8, row.text(5)),
             };
-            try result.append(v);
+            try result.append(self.alloc, v);
         }
-        return try result.toOwnedSlice();
+        return try result.toOwnedSlice(self.alloc);
     }
 
     fn createTable(conn: *zqlite.Conn) !void {
