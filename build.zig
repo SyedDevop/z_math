@@ -1,11 +1,11 @@
 const std = @import("std");
 const Config = @import("src/config.zig");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) !void {
-    var config = try Config.init(b);
     const target = b.standardTargetOptions(.{});
-
     const optimize = b.standardOptimizeOption(.{});
+    const config: Config = if (optimize == .Debug) .debug else try .init(b);
 
     const exe = b.addExecutable(.{
         .name = "m",

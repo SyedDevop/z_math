@@ -10,6 +10,12 @@ git_hash: []const u8,
 git_hash_short: []const u8,
 compiled_date: []const u8,
 
+pub const debug: Self = .{
+    .git_hash = "xxxxxx",
+    .git_hash_short = "xxxxxx--xxxxxxxx-xxxxxxxxx",
+    .compiled_date = "00-00-00 00:00:00",
+};
+
 pub fn init(b: *std.Build) !Self {
     var code: u8 = 0;
     const short_hash = short_hash: {
