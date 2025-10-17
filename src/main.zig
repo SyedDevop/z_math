@@ -290,7 +290,7 @@ pub fn main() !void {
         .completion => {
             const opts = try CliCmds.MyCLiCmds.getCmdNameList(allocator);
             defer allocator.free(opts);
-            std.debug.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
+            try stdout.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
         },
     }
 }
