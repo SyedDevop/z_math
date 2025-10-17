@@ -107,7 +107,7 @@ pub const myCLiCmdList = [_]CmdType{
     },
     CmdType{
         .name = .length,
-        .usage = "m lenght [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
+        .usage = "m length [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
         .example =
         \\Examples of Usage:
         \\    m length "mm:1:m"   - Converts 1 millimeter to meters.
