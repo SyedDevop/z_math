@@ -40,7 +40,7 @@ const Exchange = pkg.Exchange;
 const USAGE =
     \\CLI Calculator App
     \\------------------
-    \\A simple and powerful command-line calculator for evaluating math expressions and performing unit conversions for length and area.
+    \\A simple and powerful command-line calculator for evaluating math expressions and performing unit conversions.
 ;
 const NO_HISTORY_MES =
     \\No history available yet.
