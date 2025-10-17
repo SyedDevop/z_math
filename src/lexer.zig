@@ -29,6 +29,7 @@ pub const Lexer = struct {
         lex.readChar();
         return lex;
     }
+
     pub fn nextToke(self: *Self) std.fmt.ParseFloatError!Token {
         self.skipWhitespace();
         const tok: Token = switch (self.ch) {
@@ -83,6 +84,7 @@ pub const Lexer = struct {
         self.readChar();
         return tok;
     }
+
     fn readChar(self: *Self) void {
         if (self.read_position >= self.input.len) {
             self.ch = 0;
@@ -93,6 +95,7 @@ pub const Lexer = struct {
         self.position = self.read_position;
         self.read_position += 1;
     }
+
     fn readIdentifier(self: *Self) []const u8 {
         const position = self.position;
         while (isLetter(self.ch)) {
@@ -100,6 +103,7 @@ pub const Lexer = struct {
         }
         return self.input[position..self.position];
     }
+
     fn readNum(self: *Self) []const u8 {
         const startPos = self.position;
         while (isNum(self.ch) or self.ch == '.' or self.ch == '_') {
@@ -111,14 +115,17 @@ pub const Lexer = struct {
     pub fn peek(self: *Self, ch: u8) bool {
         return (self.input[self.read_position] == ch) and !(self.read_position >= self.input.len);
     }
+
     fn peekIsNum(self: *Self) bool {
         return isNum(self.input[self.read_position]);
     }
+
     fn skipWhitespace(self: *Self) void {
         while (std.ascii.isWhitespace(self.ch)) {
             self.readChar();
         }
     }
+
     pub fn hasTokes(self: *Self) bool {
         return self.ch != 0;
     }

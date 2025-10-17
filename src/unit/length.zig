@@ -59,6 +59,7 @@ fn parseLength(self: *Self) !void {
         }
     }
 }
+
 pub fn printUnits() void {
     std.debug.print("Available units:\n", .{});
     std.debug.print("Length: ", .{});
