@@ -1,13 +1,18 @@
 const std = @import("std");
-const lexer = @import("./lexer.zig");
-const Ast = @import("./ast.zig");
-const ass = std.zig.Ast;
-const Token = @import("./token.zig").Token;
 const Allocator = std.mem.Allocator;
+
+const Zarg = @import("zarg");
+const Style = Zarg.Style;
+
+const Ast = @import("./ast.zig");
+
+const Token = @import("./token.zig").Token;
+
+const lexer = @import("./lexer.zig");
 const Lexer = lexer.Lexer;
 
 const ZAppError = @import("./errors.zig").ZAppErrors;
-const Error = Allocator.Error || std.fmt.ParseFloatError;
+const Error = Allocator.Error || std.fmt.ParseFloatError || std.Io.Writer.Error;
 
 pub const Parser = struct {
     const Self = @This();
@@ -16,6 +21,7 @@ pub const Parser = struct {
 
     lex: *Lexer,
     cur: Token,
+    pre: Token,
     ast: Ast.NodeList,
 
     alloc: Allocator,
@@ -28,6 +34,7 @@ pub const Parser = struct {
         return .{
             .lex = lx,
             .cur = cur,
+            .pre = cur,
             .input = input,
             .ast = .{},
             .alloc = alloc,
@@ -45,7 +52,7 @@ pub const Parser = struct {
     }
     fn nextToken(self: *Self) Error!void {
         const tok = try self.lex.nextToke();
-
+        self.pre = self.cur;
         self.cur = tok;
     }
 
@@ -102,6 +109,7 @@ pub const Parser = struct {
         }
         return ZAppError.exit;
     }
+
     fn parseExpression(self: *Self) Error!usize {
         var lhs_idx = try self.parseTerm();
         while (self.isTokenOp('+') or self.isTokenOp('-')) {
@@ -118,6 +126,7 @@ pub const Parser = struct {
         }
         return lhs_idx;
     }
+
     fn parseTerm(self: *Self) Error!usize {
         var lhs_idx = try self.parseFactor();
         while (self.isTerm()) {
@@ -134,6 +143,7 @@ pub const Parser = struct {
         }
         return lhs_idx;
     }
+
     fn parseFactor(self: *Self) Error!usize {
         // std.debug.print("Cur Token is {any}\n", .{self.token()});
         return switch (self.token()) {
@@ -179,8 +189,8 @@ pub const Parser = struct {
                 return 0;
             },
             else => {
-                try self.nextToken();
                 try self.errors.append(self.alloc, .{ .message = " Illegal Tonken:: ", .token = self.token() });
+                try self.nextToken();
                 return 0;
             },
         };
