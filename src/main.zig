@@ -30,6 +30,7 @@ const unit = @import("unit/unit.zig");
 const Length = unit.Length;
 const Volume = unit.Volume;
 const Tempe = unit.Tempe;
+const Mass = unit.Mass;
 
 const pkg = @import("pkg/pkg.zig");
 const NumWord = pkg.NumWord;
@@ -125,6 +126,7 @@ pub fn main() !void {
             };
             try calculation.dump(&cli.computed_args, &db, exe_id, stdout);
         },
+
         .exchange => {
             if (try cli.getBoolArg("--list")) {
                 try Exchange.Currency.printAvailable(stdout);
@@ -172,6 +174,7 @@ pub fn main() !void {
                 },
             }
         },
+
         .delete => {
             if (try cli.getStrArg("--range")) |range| {
                 var ranges = std.mem.splitSequence(u8, range, "..");
@@ -190,6 +193,7 @@ pub fn main() !void {
                 std.debug.print("All entries have been successfully deleted.\n", .{});
             }
         },
+
         .length => {
             if (try cli.getBoolArg("-u")) {
                 Length.printUnits();
@@ -200,6 +204,17 @@ pub fn main() !void {
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, lenght.to.?.name });
             defer allocator.free(output);
             db.addExpr(input, output, "length", exe_id);
+        },
+        .mass => {
+            if (try cli.getBoolArg("-u")) {
+                try Mass.printUnits(stdout);
+                return;
+            }
+            var mass = Mass.init(input, &lex);
+            const out = try mass.calculateMass(stdout);
+            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, mass.to.?.name });
+            defer allocator.free(output);
+            db.addExpr(input, output, "mass", exe_id);
         },
         .volume => {
             if (try cli.getBoolArg("-u")) {
@@ -212,6 +227,7 @@ pub fn main() !void {
             defer allocator.free(output);
             db.addExpr(input, output, @tagName(cli.running_cmd.name), exe_id);
         },
+
         .temp => {
             if (try cli.getBoolArg("-u")) {
                 Tempe.printUnits();
@@ -223,9 +239,11 @@ pub fn main() !void {
             defer allocator.free(output);
             db.addExpr(input, output, @tagName(cli.running_cmd.name), exe_id);
         },
+
         .area => {
             std.debug.panic("\x1b[1;91mArea not Implemented\x1b[0m", .{});
         },
+
         .history => {
             const is_id = try cli.getBoolArg("-id");
             const order = if (try cli.getBoolArg("-e")) Order.ASC else Order.DESC;
@@ -260,6 +278,7 @@ pub fn main() !void {
 
             return;
         },
+
         .config => {
             const showDb = try cli.getBoolArg("-dp");
             if (showDb) {
@@ -267,6 +286,7 @@ pub fn main() !void {
                 return;
             }
         },
+
         .completion => {
             const opts = try CliCmds.MyCLiCmds.getCmdNameList(allocator);
             defer allocator.free(opts);

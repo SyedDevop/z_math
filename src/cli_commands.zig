@@ -3,16 +3,21 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 pub const MyCLiCmds = enum {
+    // root for math expressions
     root,
+
+    // Unit conversions
     area,
-    completion,
-    config,
-    delete,
     exchange,
-    history,
     length,
+    mass,
     temp,
     volume,
+
+    delete,
+    history,
+    config,
+    completion,
 
     pub fn getCmdNameList(alloc: Allocator) ![]const u8 {
         var result = std.ArrayList(u8).empty;
@@ -105,6 +110,32 @@ pub const myCLiCmdList = [_]CmdType{
             },
         },
     },
+
+    CmdType{
+        .name = .mass,
+        .usage = "m mass [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
+        .example =
+        \\Examples of Usage:
+        \\    m mass "kg:1:g"   - Converts 1 kilogram to grams.
+        \\    m mass "kg?1?g"   - Converts 1 kilogram to grams (with ? as a separator).
+        \\    m mass "kg 1 g"   - Converts 1 kilogram to grams.
+        \\    m mass "1 kg g"   - Converts 1 kilogram to grams.
+        \\
+        \\Notes:
+        \\  - This command accepts any separator other than numbers or letters between units and values.
+        \\  - The first unit specified is considered the starting unit (FROM_UNIT), and the last unit is the target (TO_UNIT).
+        ,
+        .info = "This command convert values between different units of Mass.",
+        .options = &.{
+            .{
+                .long = "--unit",
+                .short = "-u",
+                .info = "Displays all the support units.",
+                .value = .{ .bool = null },
+            },
+        },
+    },
+
     CmdType{
         .name = .length,
         .usage = "m length [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
@@ -129,6 +160,7 @@ pub const myCLiCmdList = [_]CmdType{
             },
         },
     },
+
     CmdType{
         .name = .volume,
         .usage = "m volume [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
@@ -147,6 +179,7 @@ pub const myCLiCmdList = [_]CmdType{
             },
         },
     },
+
     CmdType{
         .name = .temp,
         .usage = "m temp [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
@@ -165,12 +198,14 @@ pub const myCLiCmdList = [_]CmdType{
             },
         },
     },
+
     CmdType{
         .name = .area,
         .usage = "m area [OPTIONS] \"FROM_UNIT:VALUE:TO_UNIT\"",
         .info = "This command convert values between different units of area.",
         .options = null,
     },
+
     CmdType{
         .name = .delete,
         .min_arg = 0,
@@ -191,6 +226,7 @@ pub const myCLiCmdList = [_]CmdType{
             },
         },
     },
+
     CmdType{
         .name = .history,
         .min_arg = 0,
@@ -229,6 +265,7 @@ pub const myCLiCmdList = [_]CmdType{
             },
         },
     },
+
     CmdType{
         .name = .completion,
         .min_arg = 0,
@@ -236,6 +273,7 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command Generate the autocompletion script for gitpuller for the specified shell.",
         .options = null,
     },
+
     CmdType{
         .name = .config,
         .min_arg = 0,
