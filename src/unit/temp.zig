@@ -21,9 +21,11 @@ lex: *Lexer,
 from: ?Temperature = null,
 to: ?Temperature = null,
 val: f64 = 0,
+
 pub fn init(input: []const u8, lex: *Lexer) Self {
     return .{ .lex = lex, .input = input };
 }
+
 fn parse(self: *Self) !void {
     while (self.lex.hasTokes()) {
         const tok = try self.lex.nextToke();
@@ -53,6 +55,7 @@ fn parse(self: *Self) !void {
         }
     }
 }
+
 pub fn printUnits() void {
     std.debug.print("Available units:\n", .{});
     std.debug.print("Temperature's: ", .{});

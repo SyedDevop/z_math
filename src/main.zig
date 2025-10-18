@@ -26,11 +26,12 @@ const Cli = zarg.Cli;
 const Style = zarg.Style;
 const Color = zarg.Style.Color;
 
-const unit = @import("unit/unit.zig");
-const Length = unit.Length;
-const Volume = unit.Volume;
-const Tempe = unit.Tempe;
-const Mass = unit.Mass;
+const Unit = @import("unit/unit_object.zig");
+const _unit = @import("unit/unit.zig");
+const Length = _unit.Length;
+const Volume = _unit.Volume;
+const Tempe = _unit.Tempe;
+const Mass = _unit.Mass;
 
 const pkg = @import("pkg/pkg.zig");
 const NumWord = pkg.NumWord;
@@ -195,34 +196,35 @@ pub fn main() !void {
         },
 
         .length => {
+            var length = Unit.init(input, &lex, &Length.LENGTH_MAP);
             if (try cli.getBoolArg("-u")) {
-                Length.printUnits();
+                try length.printUnits(stdout, "Length");
                 return;
             }
-            var lenght = Length.init(input, &lex);
-            const out = try lenght.calculateLenght();
-            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, lenght.to.?.name });
+            const out = try length.calculate(stdout);
+            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, length.to.?.name });
             defer allocator.free(output);
             db.addExpr(input, output, "length", exe_id);
         },
         .mass => {
+            var mass = Unit.init(input, &lex, &Mass.massMap);
+
             if (try cli.getBoolArg("-u")) {
-                try Mass.printUnits(stdout);
+                try mass.printUnits(stdout, "Mass");
                 return;
             }
-            var mass = Mass.init(input, &lex);
-            const out = try mass.calculateMass(stdout);
+            const out = try mass.calculate(stdout);
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, mass.to.?.name });
             defer allocator.free(output);
             db.addExpr(input, output, "mass", exe_id);
         },
         .volume => {
+            var volume = Unit.init(input, &lex, &Volume.volMap);
             if (try cli.getBoolArg("-u")) {
-                Volume.printUnits();
+                try volume.printUnits(stdout, "Volume");
                 return;
             }
-            var volume = Volume.init(input, &lex);
-            const out = try volume.calculate();
+            const out = try volume.calculate(stdout);
             const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, volume.to.?.name });
             defer allocator.free(output);
             db.addExpr(input, output, @tagName(cli.running_cmd.name), exe_id);
