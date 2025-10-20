@@ -49,7 +49,7 @@ pub const myCLiCmdList = [_]CmdType{
             },
             .{
                 .long = "--inr",
-                .short = "-in",
+                .short = "-n",
                 .info = "Prints the number in Indian rupee formate.",
                 .value = .{ .bool = false },
             },
