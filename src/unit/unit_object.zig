@@ -20,7 +20,7 @@ pub fn init(input: []const u8, lex: *Lexer, unitMap: *const UnitMap) Unit {
     return .{ .lex = lex, .input = input, .unitMap = unitMap };
 }
 
-fn parse(self: *Unit) !void {
+pub fn parse(self: *Unit) !void {
     while (self.lex.hasTokes()) {
         const tok = try self.lex.nextToke();
         switch (tok) {
