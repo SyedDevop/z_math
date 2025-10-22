@@ -231,13 +231,14 @@ pub fn main() !void {
         },
 
         .temp => {
+            var tempe = Tempe.init(input, &lex);
+
             if (try cli.getBoolArg("-u")) {
-                Tempe.printUnits();
+                try tempe.printUnits(stdout);
                 return;
             }
-            var tempe = Tempe.init(input, &lex);
-            const out = try tempe.calculate();
-            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, @tagName(tempe.to.?.name) });
+            const out = try tempe.calculate(stdout);
+            const output = try std.fmt.allocPrint(allocator, "{d} {s}", .{ out, tempe.unit.to.?.name });
             defer allocator.free(output);
             db.addExpr(input, output, @tagName(cli.running_cmd.name), exe_id);
         },
