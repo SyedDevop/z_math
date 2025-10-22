@@ -70,22 +70,24 @@ const Style = @import("zarg").Style;
 pub fn calculate(self: *Unit, w: *Writer) !f64 {
     try self.parse();
     const output = self.val * (self.from.?.v / self.to.?.v);
-    var style = Style{
-        .fgColor = Style.Cyan,
-    };
-    try style.fmtRender("The input is :: {s} ::\n", .{self.input}, w);
-    style.fgColor = Style.Green;
-    style.fontStyle.doublyUnderline = true;
-
-    try style.fmtRender("Ans: {d} {s}\n", .{ output, self.to.?.name }, w);
+    try printOutput(self.input, output, self.to.?.name, w);
     return output;
 }
 
-pub fn calculate2(self: *Unit) !f64 {
+pub fn calculate2(self: *Unit, w: *Writer) !f64 {
     try self.parse();
     const output = (self.val * self.from.?.v) / self.to.?.v;
-    std.debug.print(" \x1b[0;36mThe input is :: {s} ::\x1b[0m\n", .{self.input});
-    std.debug.print(" \x1b[3;21;32mAns: {d} {s}\x1b[0m\n", .{ output, self.to.?.name });
-    std.debug.print("\n", .{});
+    try printOutput(self.input, output, self.to.?.name, w);
     return output;
+}
+
+pub fn printOutput(input: []const u8, output: f64, output_type_name: []const u8, w: *Writer) !void {
+    var style = Style{
+        .fgColor = Style.Cyan,
+    };
+    try style.fmtRender("The input is :: {s} ::\n", .{input}, w);
+    style.fgColor = Style.Green;
+    style.fontStyle.doublyUnderline = true;
+
+    try style.fmtRender("Ans: {d} {s}\n", .{ output, output_type_name }, w);
 }
