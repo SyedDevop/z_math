@@ -141,7 +141,9 @@ pub fn main() !void {
                 switch (tok) {
                     .word => |w| {
                         const curr = std.meta.stringToEnum(Exchange.Currency, w) orelse {
-                            std.debug.print("Invalid Currency: {s}. Use --list or --help to get the list of available currency\n", .{w});
+                            const prefix = Style.Color.renderComptime("✘ Invalid currency:", .toAnsi8(197), null);
+                            const info = Style.Color.renderComptime("   ⚠ Hint:", .toAnsi8(226), null);
+                            std.debug.print("{s} '{s}' is not recognized.\n{s} Try --list or --help to see supported currencies.\n", .{ prefix, w, info });
                             return;
                         };
                         if (from_curr == null) {
@@ -206,6 +208,7 @@ pub fn main() !void {
             defer allocator.free(output);
             db.addExpr(input, output, "length", exe_id);
         },
+
         .mass => {
             var mass = Unit.init(input, &lex, &Mass.massMap);
 
@@ -218,6 +221,7 @@ pub fn main() !void {
             defer allocator.free(output);
             db.addExpr(input, output, "mass", exe_id);
         },
+
         .volume => {
             var volume = Unit.init(input, &lex, &Volume.volMap);
             if (try cli.getBoolArg("-u")) {
