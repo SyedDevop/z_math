@@ -8,8 +8,7 @@ const Ast = @import("./ast.zig");
 
 const Token = @import("./token.zig").Token;
 
-const lexer = @import("./lexer.zig");
-const Lexer = lexer.Lexer;
+const Lexer = @import("./lexer.zig");
 
 const ZAppError = @import("./errors.zig").ZAppErrors;
 const Error = Allocator.Error || std.fmt.ParseFloatError || std.Io.Writer.Error;
@@ -91,6 +90,7 @@ pub const Parser = struct {
             try self.errors.append(self.alloc, .{ .message = "Incomplete expression: Missing operator after the number." });
         }
     }
+
     pub fn evaluate_errors(self: Self, input: []const u8) !void {
         if (self.errors.items.len == 0) return;
         for (self.errors.items) |err| {
