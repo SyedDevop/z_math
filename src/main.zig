@@ -303,6 +303,7 @@ pub fn main() !void {
 }
 test {
     _ = @import("token.zig");
+    _ = @import("lexer.zig");
 }
 // const ex = std.testing.expectEqualDeep;
 // test "Lexer" {

@@ -27,7 +27,7 @@ pub const Eval = struct {
     }
     fn nodeValue(self: *Self, key: usize) f64 {
         const num = switch (self.ast.get(key).value) {
-            .BinaryOpration => self.map.get(key) orelse 0,
+            .BinaryOperation => self.map.get(key) orelse 0,
             .Integer => |n| return n,
         };
         return num;
@@ -61,7 +61,7 @@ pub const Eval = struct {
         for (0..self.ast.len) |i| {
             const cur_node = self.ast.get(i);
             switch (cur_node.value) {
-                .BinaryOpration => |op| {
+                .BinaryOperation => |op| {
                     const lhs_val: f64 = self.leftVal(&cur_node);
                     const rhs_val: f64 = self.rightVal(&cur_node);
                     const res = self.perFormOpration(op, lhs_val, rhs_val);

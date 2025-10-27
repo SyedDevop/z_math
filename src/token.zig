@@ -31,6 +31,7 @@ pub const Token = union(enum) {
     equal,
     not_equal,
 
+    new_line,
     eof,
 
     pub fn keyword(key: []const u8) ?Token {
@@ -47,6 +48,16 @@ pub const Token = union(enum) {
             .operator => |op| ch == op,
             else => false,
         };
+    }
+
+    pub fn tokenValue(tok: Token, prefix: ?[]const u8, writer: *std.io.Writer) !void {
+        switch (tok) {
+            .num => |n| try writer.print("{s} {d}", .{ prefix orelse "", n }),
+            .word => |w| try writer.print("{s} {s}", .{ prefix orelse "", w }),
+            else => {
+                try writer.print("{s} {s}", .{ prefix orelse "", displayToken(tok) });
+            },
+        }
     }
 };
 
@@ -66,6 +77,7 @@ pub fn displayToken(tok: Token) []const u8 {
         .greater_than => ">",
         .equal => "=",
         .not_equal => "!=",
+        .new_line => "New Line",
         .eof => "EOF",
     };
 }

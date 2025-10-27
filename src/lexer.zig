@@ -13,12 +13,20 @@ fn isOprater(ch: u8) bool {
     return ch == '/' or ch == '*' or ch == '-' or ch == '+' or ch == '^';
 }
 
+pub const Loc = struct {
+    line_number: u32 = 0,
+    line_offset: u32 = 0,
+    pub const init: Loc = .{};
+};
+
 const Lexer = @This();
 read_position: usize = 0,
 position: usize = 0,
 ch: u8 = 0,
 input: []const u8,
 alloc: Allocator,
+line_number: u32 = 0,
+line_offset: u32 = 0,
 
 pub fn init(input: []const u8, alloc: Allocator) Lexer {
     var lex = Lexer{
@@ -72,6 +80,12 @@ pub fn nextToke(self: *Lexer) std.fmt.ParseFloatError!Token {
             const num = self.readNum();
             return .{ .num = try std.fmt.parseFloat(f64, num) };
         },
+        '\n' => blk: {
+            self.line_number += 1;
+            self.line_offset = 0;
+            break :blk .new_line;
+        },
+
         else => .{
             .illegal = .{
                 .st_pos = self.position,
@@ -92,6 +106,7 @@ fn readChar(self: *Lexer) void {
     }
 
     self.position = self.read_position;
+    self.line_offset += 1;
     self.read_position += 1;
 }
 
@@ -119,12 +134,75 @@ fn peekIsNum(self: *Lexer) bool {
     return isNum(self.input[self.read_position]);
 }
 
+/// Returns whether this character is included in `whitespace`.
+pub fn isWhitespace(c: u8) bool {
+    return switch (c) {
+        ' ', '\t', '\r' => true,
+        else => false,
+    };
+}
+
 fn skipWhitespace(self: *Lexer) void {
-    while (std.ascii.isWhitespace(self.ch)) {
+    while (isWhitespace(self.ch)) {
         self.readChar();
     }
 }
 
 pub fn hasTokes(self: *Lexer) bool {
     return self.ch != 0;
+}
+
+const TestLexer = struct {
+    input: []const u8,
+    output: []const Token,
+};
+
+const assert = std.debug.assert;
+const eq = std.testing.expectEqual;
+const eqd = std.testing.expectEqualDeep;
+
+test "(Lexer) One Line" {
+    const allocator = std.testing.allocator;
+    const testLexer = TestLexer{
+        .input = "50 + 50",
+        .output = &.{
+            .{ .num = 50 },
+            .{ .operator = '+' },
+            .{ .num = 50 },
+            .eof,
+        },
+    };
+    var lexer = Lexer.init(testLexer.input, allocator);
+    for (0..testLexer.output.len) |i| {
+        const tok = try lexer.nextToke();
+        try eq(testLexer.output[i], tok);
+    }
+    try eq(false, lexer.hasTokes());
+}
+
+test "(Lexer) Multi Line" {
+    const allocator = std.testing.allocator;
+    const testLexer = TestLexer{
+        .input =
+        \\50 + 50
+        \\50 + 50
+        ,
+        .output = &.{
+            .{ .num = 50 },
+            .{ .operator = '+' },
+            .{ .num = 50 },
+            .new_line,
+            .{ .num = 50 },
+            .{ .operator = '+' },
+            .{ .num = 50 },
+            .eof,
+        },
+    };
+    var lexer = Lexer.init(testLexer.input, allocator);
+    for (0..testLexer.output.len) |i| {
+        const tok = try lexer.nextToke();
+        try eq(testLexer.output[i], tok);
+        if (tok == .new_line) try eq(1, lexer.line_number);
+    }
+    try eq(false, lexer.hasTokes());
 }
