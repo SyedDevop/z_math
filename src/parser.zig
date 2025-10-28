@@ -177,8 +177,16 @@ pub const Parser = struct {
             .lparen => {
                 try self.nextToken();
                 const expr = try self.parseExpression();
-                try self.nextToken();
-                return expr;
+                if (self.lex.peek(')')) {
+                    try self.nextToken();
+                    return expr;
+                }
+
+                try self.errors.append(
+                    self.alloc,
+                    self.errorMessage("Incomplete expression: Missing closing parenthesis ", null),
+                );
+                return 0;
             },
             .eof => {
                 std.debug.print("Ast len {d}\n", .{self.ast.len});
