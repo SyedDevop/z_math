@@ -177,7 +177,7 @@ pub const Parser = struct {
             .lparen => {
                 try self.nextToken();
                 const expr = try self.parseExpression();
-                if (self.lex.peek(')')) {
+                if (self.cur == .rparen) {
                     try self.nextToken();
                     return expr;
                 }
