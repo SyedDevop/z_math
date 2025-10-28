@@ -127,7 +127,7 @@ fn readNum(self: *Lexer) []const u8 {
 }
 
 pub fn peek(self: *Lexer, ch: u8) bool {
-    return (self.input[self.read_position] == ch) and !(self.read_position >= self.input.len);
+    return self.read_position <= self.input.len and (self.input[self.read_position] == ch);
 }
 
 fn peekIsNum(self: *Lexer) bool {
