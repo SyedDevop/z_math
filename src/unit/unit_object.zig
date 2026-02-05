@@ -1,8 +1,7 @@
 const std = @import("std");
 const Writer = std.io.Writer;
 
-const lexer = @import("../lexer.zig");
-const Lexer = lexer.Lexer;
+const Lexer = @import("../lexer.zig");
 
 pub const UnitsValue = struct { name: []const u8, v: f64 };
 pub const UnitMap = std.StaticStringMap(UnitsValue);

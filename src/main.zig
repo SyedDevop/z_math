@@ -17,8 +17,7 @@ const Eval = evalStruct.Eval;
 const parser = @import("./parser.zig");
 const Parser = parser.Parser;
 
-const lexer = @import("./lexer.zig");
-const Lexer = lexer.Lexer;
+const Lexer = @import("./lexer.zig");
 
 const CliCmds = @import("cli_commands.zig");
 const zarg = @import("zarg");
@@ -91,6 +90,7 @@ fn genVersion(version_form: Cli.VersionCallFrom) []const u8 {
     };
 }
 pub fn main() !void {
+    // if (true) return;
     const exe_id = std.crypto.random.intRangeAtMost(u64, 1000, 15000);
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -301,80 +301,83 @@ pub fn main() !void {
         },
     }
 }
-
-const ex = std.testing.expectEqualDeep;
-test "Lexer" {
-    var lex = Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3", std.testing.allocator);
-    const tokens = [_]Token{
-        .{ .num = 3 },
-        .{ .operator = '+' },
-        .{ .num = 4 },
-        .{ .operator = '*' },
-        .{ .num = 2 },
-        .{ .operator = '/' },
-        .lparen,
-        .{ .num = 1 },
-        .{ .operator = '-' },
-        .{ .num = 5 },
-        .rparen,
-        .{ .operator = '^' },
-        .{ .num = 2 },
-        .{ .operator = '^' },
-        .{ .num = 3 },
-        .eof,
-    };
-    for (tokens) |token| {
-        const tok = lex.nextToke();
-        try ex(token, tok);
-    }
+test {
+    _ = @import("token.zig");
+    _ = @import("lexer.zig");
 }
-test "Lexer Lenght" {
-    var lex = Lexer.init("mm:45:ft", std.testing.allocator);
-    const tokens = [_]Token{
-        .mm,
-        .colon,
-        .{ .num = 45 },
-        .colon,
-        .ft,
-        .eof,
-    };
-    for (tokens) |token| {
-        const tok = lex.nextToke();
-        try ex(token, tok);
-    }
-}
-test "Read file" {
-    if (std.zig.EnvVar.HOME.getPosix()) |home| {
-        const dir_path = try std.fs.path.join(std.testing.allocator, &.{ home, ".config/.z_math" });
-        defer std.testing.allocator.free(dir_path);
-        // try std.fs.makeDirAbsolute(dir_path);
-
-        const file_path = try std.fs.path.join(std.testing.allocator, &.{ dir_path, ".zmath.json" });
-        defer std.testing.allocator.free(file_path);
-
-        const file = std.fs.cwd().openFile(file_path, .{ .mode = .read_write }) catch |e| {
-            switch (e) {
-                .FileNotFound => {
-                    try std.fs.cwd().createFile(file_path, .{});
-                    return;
-                },
-                else => return e,
-            }
-        };
-
-        defer file.close();
-        const stat = try file.stat();
-        try file.seekTo(stat.size);
-
-        const bytes_written = try file.writeAll("\n--Uzer\nSyed Uzair||Hello||Jo||50||6011212");
-        _ = bytes_written;
-
-        try file.seekTo(0);
-        var buffer: [100]u8 = undefined;
-        _ = try file.readAll(&buffer);
-        std.debug.print("{s}", .{buffer});
-    } else {
-        std.debug.print("conf_path Not found", .{});
-    }
-    // try std.testing.expect(std.mem.eql(u8, buffer[0..11], "Hello File!"));
-}
+// const ex = std.testing.expectEqualDeep;
+// test "Lexer" {
+//     var lex = Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3", std.testing.allocator);
+//     const tokens = [_]Token{
+//         .{ .num = 3 },
+//         .{ .operator = '+' },
+//         .{ .num = 4 },
+//         .{ .operator = '*' },
+//         .{ .num = 2 },
+//         .{ .operator = '/' },
+//         .lparen,
+//         .{ .num = 1 },
+//         .{ .operator = '-' },
+//         .{ .num = 5 },
+//         .rparen,
+//         .{ .operator = '^' },
+//         .{ .num = 2 },
+//         .{ .operator = '^' },
+//         .{ .num = 3 },
+//         .eof,
+//     };
+//     for (tokens) |token| {
+//         const tok = lex.nextToke();
+//         try ex(token, tok);
+//     }
+// }
+// test "Lexer Lenght" {
+//     var lex = Lexer.init("mm:45:ft", std.testing.allocator);
+//     const tokens = [_]Token{
+//         .mm,
+//         .colon,
+//         .{ .num = 45 },
+//         .colon,
+//         .ft,
+//         .eof,
+//     };
+//     for (tokens) |token| {
+//         const tok = lex.nextToke();
+//         try ex(token, tok);
+//     }
+// }
+// test "Read file" {
+//     if (std.zig.EnvVar.HOME.getPosix()) |home| {
+//         const dir_path = try std.fs.path.join(std.testing.allocator, &.{ home, ".config/.z_math" });
+//         defer std.testing.allocator.free(dir_path);
+//         // try std.fs.makeDirAbsolute(dir_path);
+//
+//         const file_path = try std.fs.path.join(std.testing.allocator, &.{ dir_path, ".zmath.json" });
+//         defer std.testing.allocator.free(file_path);
+//
+//         const file = std.fs.cwd().openFile(file_path, .{ .mode = .read_write }) catch |e| {
+//             switch (e) {
+//                 .FileNotFound => {
+//                     try std.fs.cwd().createFile(file_path, .{});
+//                     return;
+//                 },
+//                 else => return e,
+//             }
+//         };
+//
+//         defer file.close();
+//         const stat = try file.stat();
+//         try file.seekTo(stat.size);
+//
+//         const bytes_written = try file.writeAll("\n--Uzer\nSyed Uzair||Hello||Jo||50||6011212");
+//         _ = bytes_written;
+//
+//         try file.seekTo(0);
+//         var buffer: [100]u8 = undefined;
+//         _ = try file.readAll(&buffer);
+//         std.debug.print("{s}", .{buffer});
+//     } else {
+//         std.debug.print("conf_path Not found", .{});
+//     }
+//     // try std.testing.expect(std.mem.eql(u8, buffer[0..11], "Hello File!"));
+// }

@@ -1,12 +1,10 @@
 const std = @import("std");
 const Writer = std.io.Writer;
 
-const lexer = @import("../lexer.zig");
+const Lexer = @import("../lexer.zig");
 const Unit = @import("unit_object.zig");
 const UnitMap = Unit.UnitMap;
 const UnitValue = Unit.UnitsValue;
-
-const Lexer = lexer.Lexer;
 
 const TempType = enum {
     Celsius,

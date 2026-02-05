@@ -1,5 +1,6 @@
 const std = @import("std");
 const Tok = @import("./token.zig");
+const Loc = @import("./lexer.zig").Loc;
 
 pub const NodeList = std.MultiArrayList(Node);
 
@@ -9,11 +10,12 @@ pub const Error = struct {
     level: Level = .err,
     token: ?Tok.Token = null,
     message: []const u8,
-    message_alloced: bool = false,
+    message_allocated: bool = false,
+    loc: Loc = .init,
 };
 
 pub const Value = union(enum) {
-    BinaryOpration: u8,
+    BinaryOperation: u8,
     Integer: f64,
 };
 

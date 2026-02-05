@@ -3,13 +3,13 @@ const Allocator = std.mem.Allocator;
 
 const Zarg = @import("zarg");
 const Style = Zarg.Style;
+const Color = Zarg.Style.Color;
 
 const Ast = @import("./ast.zig");
 
 const Token = @import("./token.zig").Token;
 
-const lexer = @import("./lexer.zig");
-const Lexer = lexer.Lexer;
+const Lexer = @import("./lexer.zig");
 
 const ZAppError = @import("./errors.zig").ZAppErrors;
 const Error = Allocator.Error || std.fmt.ParseFloatError || std.Io.Writer.Error;
@@ -26,7 +26,7 @@ pub const Parser = struct {
 
     alloc: Allocator,
 
-    errors: std.ArrayListUnmanaged(Ast.Error),
+    errors: std.ArrayList(Ast.Error),
 
     pub fn init(input: []const u8, lex: *Lexer, alloc: Allocator) !Self {
         const lx = lex;
@@ -38,7 +38,7 @@ pub const Parser = struct {
             .input = input,
             .ast = .{},
             .alloc = alloc,
-            .errors = .{},
+            .errors = .empty,
         };
     }
 
@@ -50,6 +50,7 @@ pub const Parser = struct {
     fn token(self: Self) Token {
         return self.cur;
     }
+
     fn nextToken(self: *Self) Error!void {
         const tok = try self.lex.nextToke();
         self.pre = self.cur;
@@ -83,27 +84,48 @@ pub const Parser = struct {
             self.isTokenOp('m');
     }
 
+    inline fn location(self: Self) Lexer.Loc {
+        return .{ .line_number = self.lex.line_number, .line_offset = self.lex.line_offset };
+    }
+
+    fn errorMessage(self: Self, message: []const u8, level: ?Ast.Level) Ast.Error {
+        return Ast.Error{
+            .message = message,
+            .loc = self.location(),
+            .level = level orelse .err,
+        };
+    }
+
     pub fn parse(self: *Self) !void {
         while (self.lex.hasTokes()) {
             _ = try self.parseExpression();
         }
         if (self.ast.len == 1) {
-            try self.errors.append(self.alloc, .{ .message = "Incomplete expression: Missing operator after the number." });
+            try self.errors.append(self.alloc, self.errorMessage("Incomplete expression: Missing operator after the number.", null));
         }
     }
+
     pub fn evaluate_errors(self: Self, input: []const u8) !void {
         if (self.errors.items.len == 0) return;
+        var buf: [256]u8 = undefined;
+        const stderr = std.debug.lockStderrWriter(&buf);
+        defer std.debug.unlockStderrWriter();
         for (self.errors.items) |err| {
-            if (err.level == .err) {
-                std.debug.print("The input is :: {s} ::\n\x1b[0m", .{input});
-                std.debug.print("\x1b[31mError: {s}\x1b[0m\n", .{err.message});
-            } else {
-                std.debug.print("\x1b[33mWaring: {s}\x1b[0m\n", .{err.message});
-            }
+            try stderr.print("The input is :: {s} ::\n", .{input});
+            const errorType = if (err.level == .err) "✘ Error " else "⚠ Waring"; // try stderr.print("\x1b[31mError: {s}\x1b[0m\n", .{err.message});
+            try Color.renderFmt(
+                "{s}: {s}",
+                .{ errorType, err.message },
+                if (err.level == .err) .toAnsi8(197) else .toAnsi8(226),
+                null,
+                stderr,
+            );
             if (err.token) |tok| {
-                std.debug.print("\x1b[33mToke:: {any}\x1b[0m\n", .{tok});
+                try stderr.writeAll("\x1b[38;5;226m");
+                try tok.tokenValue("", stderr);
             }
-            if (err.message_alloced) {
+            try stderr.writeAll("\x1b[0m\n");
+            if (err.message_allocated) {
                 self.alloc.free(err.message);
             }
         }
@@ -117,7 +139,7 @@ pub const Parser = struct {
             try self.nextToken();
             const rhs_idx = try self.parseTerm();
             const ast = Ast.Node{
-                .value = .{ .BinaryOpration = pre_op },
+                .value = .{ .BinaryOperation = pre_op },
                 .left = lhs_idx,
                 .right = rhs_idx,
             };
@@ -134,7 +156,7 @@ pub const Parser = struct {
             try self.nextToken();
             const rhs_idx = try self.parseFactor();
             const ast = Ast.Node{
-                .value = .{ .BinaryOpration = pre_op },
+                .value = .{ .BinaryOperation = pre_op },
                 .left = lhs_idx,
                 .right = rhs_idx,
             };
@@ -155,16 +177,30 @@ pub const Parser = struct {
             .lparen => {
                 try self.nextToken();
                 const expr = try self.parseExpression();
-                try self.nextToken();
-                return expr;
+                if (self.cur == .rparen) {
+                    try self.nextToken();
+                    return expr;
+                }
+
+                try self.errors.append(
+                    self.alloc,
+                    self.errorMessage("Incomplete expression: Missing closing parenthesis ", null),
+                );
+                return 0;
             },
             .eof => {
                 std.debug.print("Ast len {d}\n", .{self.ast.len});
                 if (self.ast.len == 1) {
-                    try self.errors.append(self.alloc, .{ .message = "Incomplete expression: Missing second operand after the operator." });
+                    try self.errors.append(
+                        self.alloc,
+                        self.errorMessage("Incomplete expression: Missing second operand after the operator.", null),
+                    );
                     return 0;
                 }
-                try self.errors.append(self.alloc, .{ .message = "The expression provided is too short. Please provide a longer or more detailed expression", .level = .waring });
+                try self.errors.append(
+                    self.alloc,
+                    self.errorMessage("The expression provided is too short. Please provide a longer or more detailed expression", .waring),
+                );
                 return 0;
             },
             .illegal => |il| {
@@ -172,8 +208,8 @@ pub const Parser = struct {
                 var s = std.ArrayList(u8).empty;
                 defer s.deinit(self.alloc);
 
-                // 16 is the prefix for the input print at start.
-                for (0..il.st_pos + 9) |_| {
+                // 9 is the prefix for the input print at start.
+                for (0..il.st_pos + 6) |_| {
                     try s.append(self.alloc, ' ');
                 }
 
@@ -185,11 +221,19 @@ pub const Parser = struct {
 
                 try s.appendSlice(self.alloc, "^ Found illegal character");
                 const mess = try s.toOwnedSlice(self.alloc);
-                try self.errors.append(self.alloc, .{ .message_alloced = true, .message = mess });
+                try self.errors.append(self.alloc, .{
+                    .message_allocated = true,
+                    .message = mess,
+                    .loc = self.location(),
+                });
                 return 0;
             },
             else => {
-                try self.errors.append(self.alloc, .{ .message = " Illegal Tonken:: ", .token = self.token() });
+                try self.errors.append(self.alloc, .{
+                    .message = "Unexpected symbol:: ",
+                    .token = self.token(),
+                    .loc = self.location(),
+                });
                 try self.nextToken();
                 return 0;
             },
