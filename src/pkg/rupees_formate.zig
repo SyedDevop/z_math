@@ -24,7 +24,7 @@ pub fn formateToRupees(alloc: Allocator, n: f128) ![]u8 {
     }
 
     const fraction: f128 = @mod(n, 1);
-    const fraction_number: usize = @intFromFloat(fraction * 1000);
+    const fraction_number: usize = @intFromFloat(fraction * 100);
     try num_fmt_w.print(".{d:0>2}", .{fraction_number});
     return num_fmt.toOwnedSlice(alloc);
 }

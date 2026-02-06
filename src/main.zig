@@ -304,6 +304,7 @@ pub fn main() !void {
 test {
     _ = @import("token.zig");
     _ = @import("lexer.zig");
+    _ = @import("pkg/rupees_formate_test.zig");
 }
 // const ex = std.testing.expectEqualDeep;
 // test "Lexer" {
