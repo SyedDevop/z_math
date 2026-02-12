@@ -103,7 +103,7 @@ pub fn dump(self: *const Self, cli: *ComputedArg, db: *Db, exe_id: u64, writer: 
     }
     const is_word_fmt = try cli.getBoolArg("--word");
     if (is_word_fmt) {
-        const word = try NumWord.floatToWord(self.alloc, self.computed_number);
+        const word = try NumWord.numToWord(self.alloc, @intFromFloat(@abs(self.computed_number)));
         defer self.alloc.free(word);
         try answer_word_style.fmtRender("{s}\n", .{word}, writer);
     }
@@ -120,7 +120,7 @@ pub fn dump(self: *const Self, cli: *ComputedArg, db: *Db, exe_id: u64, writer: 
                 defer self.alloc.free(nums);
                 try writer.print("Exchange rate for {d} {s} is {s}\n", .{ self.computed_number, @tagName(curr), nums });
                 if (is_word_fmt) {
-                    const word = try NumWord.floatToWord(self.alloc, exchange_curr);
+                    const word = try NumWord.numToWord(self.alloc, @intFromFloat(@abs(exchange_curr)));
                     defer self.alloc.free(word);
                     try answer_word_style.fmtRender("{s}\n", .{word}, writer);
                 }

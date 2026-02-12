@@ -170,7 +170,7 @@ pub fn main() !void {
                         print("{d:0>6.3}\n", .{exchange_curr});
                     }
                     if (try cli.getBoolArg("--word")) {
-                        const word = try NumWord.floatToWord(allocator, exchange_curr);
+                        const word = try NumWord.numToWord(allocator, @intFromFloat(exchange_curr));
                         defer allocator.free(word);
                         try answer_word_style.fmtRender("{s}\n", .{word}, stdout);
                     }
@@ -305,6 +305,7 @@ test {
     _ = @import("token.zig");
     _ = @import("lexer.zig");
     _ = @import("pkg/rupees_formate_test.zig");
+    _ = @import("pkg/num_words_test.zig");
 }
 // const ex = std.testing.expectEqualDeep;
 // test "Lexer" {

@@ -1,4 +1,6 @@
+// setlocal makeprg=zig\ build-exe\ %
 const std = @import("std");
+const Writer = std.Io.Writer;
 
 const WORDS = [28][]const u8{
     "Zero",     "One",      "Two",      "Three",   "Four",    "Five",
@@ -8,93 +10,83 @@ const WORDS = [28][]const u8{
     "Sixty",    "Seventy",  "Eighty",   "Ninety",
 };
 
-const Writer = std.ArrayList(u8).Writer;
-const NumErrors = error{NumberRangeNotSupported};
-inline fn getWord(n: u8) []const u8 {
+const MAGNITUDES: []const []const u8 = &.{
+    "",     "Thousand", "Lakh", "Crore",
+    "Arab", "Kharab",   "Neel", "Padma",
+};
+
+inline fn getWord(n: usize) []const u8 {
+    std.debug.assert(n < 100);
     return WORDS[if (n <= 20) n else (n / 10) + 18];
 }
 
-fn place2Word(n: u8, writer: Writer) !void {
-    if (n < 20) {
-        try writer.writeAll(getWord(n));
-    } else if (n < 100) {
-        try tenthWord(n, writer);
+fn subThousand(n: usize, writer: *Writer) !void {
+    std.debug.assert(n < 1000);
+    var it: usize = n;
+
+    while (true) {
+        if (it < 100) {
+            try writer.writeAll(getWord(it));
+        } else {
+            try writer.print("{s} Hundred", .{getWord(it / 100)});
+            if (it % 100 > 0) try writer.writeAll(" And");
+        }
+        try writer.writeByte(' ');
+
+        if (it < 20) {
+            break;
+        } else if (it < 100) {
+            it %= 10;
+        } else {
+            it %= 100;
+        }
+
+        if (it == 0) break;
     }
 }
-fn tenthWord(n: u128, writer: Writer) !void {
-    const tens = (n / 10) * 10;
-    const ones = n % 10;
-    try writer.writeAll(getWord(@intCast(tens)));
-    if (ones > 0) try writer.print("-{s}", .{getWord(@intCast(ones))});
-}
 
-fn hundredthWord(n: u128, writer: Writer) !void {
-    try writer.print("{s} Hundred ", .{getWord(@intCast(n / 100))});
-    const tenth = n % 100;
-    if (tenth > 0) try tenthWord(tenth, writer);
-}
+fn toWords(n: usize, writer: *Writer) !void {
+    if (n == 0) {
+        try writer.writeAll(getWord(n));
+        return;
+    }
+    var parts: [10]usize = @splat(0);
+    var count: usize = 0;
+    var value = n;
 
-fn thousandthWord(n: u128, writer: Writer) !void {
-    const thousandth: u8 = @intCast(n / 1000);
-    try place2Word(thousandth, writer);
-    try writer.writeAll(" Thousand ");
-    const hundredth = n % 1000;
-    if (hundredth > 0) try hundredthWord(hundredth, writer);
-}
-fn lakh_word(n: u128, writer: Writer) !void {
-    const lakh: u8 = @intCast(n / 1_00_000);
-    try place2Word(lakh, writer);
-    try writer.writeAll(" Lakh ");
-    try thousandthWord(n % 1_00_000, writer);
-}
+    // First group (last 3 digits)
+    parts[count] = value % 1000;
+    value /= 1000;
+    count += 1;
 
-fn crore_word(n: u128, writer: Writer) !void {
-    const crore: u8 = @intCast(n / 1_00_00_000);
-    try place2Word(crore, writer);
-    try writer.writeAll(" Crore ");
-    try lakh_word(n % 1_00_00_000, writer);
-}
+    while (value > 0) {
+        parts[count] = value % 100;
+        value /= 100;
+        count += 1;
+    }
 
-fn toWords(n: u128, writer: Writer) !void {
-    if (n < 100) {
-        try place2Word(@intCast(n), writer);
-    } else if (n < 1_000) {
-        try hundredthWord(n, writer);
-    } else if (n < 1_00_000) {
-        try thousandthWord(n, writer);
-    } else if (n < 1_00_00_000) {
-        try lakh_word(n, writer);
-    } else if (n < 1_00_00_00_000) {
-        try crore_word(n, writer);
-    } else return NumErrors.NumberRangeNotSupported;
+    var i: isize = @intCast(count);
+    i -= 1;
+    while (i >= 0) : (i -= 1) {
+        const idx: usize = @intCast(i);
+        const part = parts[idx];
+        if (part == 0) continue;
+
+        try subThousand(part, writer);
+
+        if (idx > MAGNITUDES.len and idx == 0) continue;
+        try writer.writeAll(MAGNITUDES[idx]);
+        try writer.writeByte(' ');
+    }
 }
 
 /// You need to free the string after you are done using it.
-pub fn numToWord(alloc: std.mem.Allocator, n: u128) ![]u8 {
-    var num_word = std.ArrayList(u8).init(alloc);
-    const writer = num_word.writer();
-    try toWords(n, writer);
-    return try num_word.toOwnedSlice();
+pub fn numToWord(alloc: std.mem.Allocator, n: usize) ![]u8 {
+    var alloc_writer: std.Io.Writer.Allocating = try .initCapacity(alloc, 1024);
+    defer alloc_writer.deinit();
+
+    try toWords(n, &alloc_writer.writer);
+
+    const word_clean = std.mem.trim(u8, alloc_writer.written(), " ");
+    return alloc.dupe(u8, word_clean);
 }
-
-/// You need to free the string after you are done using it.
-pub fn floatToWord(alloc: std.mem.Allocator, n: f128) ![]u8 {
-    var num_word = std.ArrayList(u8).empty;
-    const writer = num_word.writer(alloc);
-    if (n < 0) try writer.print("(negative) ", .{});
-    const whole_number: u128 = @intFromFloat(@abs(n));
-    try toWords(whole_number, writer);
-    try writer.print(" Point ", .{});
-
-    const frac: f128 = @abs(n) - @as(f128, @floatFromInt(whole_number));
-    const fracAsInt: u128 = @intFromFloat(frac * 100);
-    try toWords(fracAsInt, writer);
-
-    return try num_word.toOwnedSlice(alloc);
-}
-
-// pub fn main() !void {
-//     const alloc = std.heap.page_allocator;
-//     const num_word = try numToWord(alloc, 23);
-//     std.debug.print("{s}\n", .{num_word});
-// }
