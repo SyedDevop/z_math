@@ -95,7 +95,7 @@ pub fn dump(self: *const Self, cli: *ComputedArg, db: *Db, exe_id: u64, writer: 
     }
 
     try header_style.fmtRender("The input is :: {s} ::\n", .{self.input}, writer);
-    try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
+    if (!try cli.getBoolArg("--inr")) try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
     if (try cli.getBoolArg("--inr")) {
         const nums = try FmtCurr.formateToRupees(self.alloc, self.computed_number);
         defer self.alloc.free(nums);
