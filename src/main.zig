@@ -161,13 +161,13 @@ pub fn main() !void {
                 .list => try Exchange.Currency.printAvailable(stdout),
                 else => {
                     const exchange_curr = try Exchange.rate(allocator, num, from_curr.?, to_curr orelse .inr);
-                    print("Exchange rate for {d} {s} is ", .{ num, @tagName(from_curr.?) });
+                    print("Exchange rate: {d} {t} = ", .{ num, from_curr.? });
                     if (to_curr == null or to_curr == .inr) {
                         const nums = try FmtCurr.formateToRupees(allocator, exchange_curr);
                         defer allocator.free(nums);
                         print("{s}\n", .{nums});
                     } else {
-                        print("{d:0>6.3}\n", .{exchange_curr});
+                        print("{d:0>6.3} {t}\n", .{ exchange_curr, to_curr.? });
                     }
                     if (try cli.getBoolArg("--word")) {
                         const word = try NumWord.numToWord(allocator, @intFromFloat(exchange_curr));
