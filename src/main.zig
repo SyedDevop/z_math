@@ -74,10 +74,6 @@ const AUTOCOMPLETION =
 const cmds = @import("./cmds/cmds.zig");
 const Calculation = cmds.Calculation;
 
-var stdout_buffer: [1024]u8 = undefined;
-var stdout_io = std.fs.File.stdout().writer(&stdout_buffer);
-var stdout = &stdout_io.interface;
-
 var answer_word_style: Style = .{
     .fontStyle = .{ .bold = true },
     .fgColor = .toColor(105),
@@ -89,15 +85,20 @@ fn genVersion(version_form: Cli.VersionCallFrom) []const u8 {
         .help => build_options.version_string,
     };
 }
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // if (true) return;
-    const exe_id = std.crypto.random.intRangeAtMost(u64, 1000, 15000);
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_io = std.Io.File.stdout().writer(init.io, &stdout_buffer);
+    var stdout = &stdout_io.interface;
 
-    var db = try Db.init(allocator);
+    const rnd_io = std.Random.IoSource{ .io = init.io };
+    const rnd = rnd_io.interface();
+    const exe_id = rnd.intRangeAtMost(u64, 1000, 15000);
+
+    const allocator = init.gpa;
+
+    var db = try Db.init(allocator, init.environ_map);
     defer db.deinit();
 
     var cli = try Cli.CliInit(CliCmds.MyCLiCmds).init(
@@ -107,10 +108,14 @@ pub fn main() !void {
         .{ .fun = &genVersion },
         &CliCmds.myCLiCmdList,
     );
-
     defer cli.deinit();
-    cli.parse() catch |err| {
-        try cli.printParseError(err);
+
+    const args = try init.minimal.args.toSlice(allocator);
+    defer allocator.free(args);
+
+    cli.parse(args) catch |err| {
+        try cli.printParseError(err, stdout);
+        try stdout.flush();
         return;
     };
 
@@ -125,7 +130,7 @@ pub fn main() !void {
                 if (err == ZAppError.exit) return;
                 return err;
             };
-            try calculation.dump(&cli.computed_args, &db, exe_id, stdout);
+            try calculation.dump(init.io, &cli.computed_args, &db, exe_id, stdout);
         },
 
         .exchange => {
@@ -160,7 +165,7 @@ pub fn main() !void {
             switch (from_curr.?) {
                 .list => try Exchange.Currency.printAvailable(stdout),
                 else => {
-                    const exchange_curr = try Exchange.rate(allocator, num, from_curr.?, to_curr orelse .inr);
+                    const exchange_curr = try Exchange.rate(allocator, init.io, num, from_curr.?, to_curr orelse .inr);
                     print("Exchange rate: {d} {t} = ", .{ num, from_curr.? });
                     if (to_curr == null or to_curr == .inr) {
                         const nums = try FmtCurr.formateToRupees(allocator, exchange_curr);
@@ -297,7 +302,7 @@ pub fn main() !void {
         .completion => {
             const opts = try CliCmds.MyCLiCmds.getCmdNameList(allocator);
             defer allocator.free(opts);
-            try stdout.print(AUTOCOMPLETION, .{std.mem.trimRight(u8, opts, " ")});
+            try stdout.print(AUTOCOMPLETION, .{std.mem.trimEnd(u8, opts, " ")});
         },
     }
 }

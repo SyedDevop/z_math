@@ -22,25 +22,25 @@ pub fn init(b: *std.Build) !Self {
         const output = b.runAllowFail(
             &[_][]const u8{ "git", "-C", b.build_root.path orelse ".", "log", "--pretty=format:%h", "-n", "1" },
             &code,
-            .Ignore,
+            .ignore,
         ) catch |err| switch (err) {
             error.FileNotFound => return error.GitNotFound,
             else => return err,
         };
 
-        break :short_hash std.mem.trimRight(u8, output, "\r\n ");
+        break :short_hash std.mem.trimEnd(u8, output, "\r\n ");
     };
 
     const hash = hash: {
         const output = b.runAllowFail(
             &[_][]const u8{ "git", "rev-parse", "HEAD" },
             &code,
-            .Ignore,
+            .ignore,
         ) catch |err| switch (err) {
             error.FileNotFound => return error.GitNotFound,
             else => return err,
         };
-        break :hash std.mem.trimRight(u8, output, "\r\n");
+        break :hash std.mem.trimEnd(u8, output, "\r\n");
     };
     const date = brk_date: {
         const date_cmd: []const []const u8 = switch (builtin.os.tag) {
@@ -51,12 +51,12 @@ pub fn init(b: *std.Build) !Self {
         const output = b.runAllowFail(
             date_cmd,
             &code,
-            .Ignore,
+            .ignore,
         ) catch |err| switch (err) {
             error.FileNotFound => return error.DateNotFound,
             else => return err,
         };
-        break :brk_date std.mem.trimRight(u8, output, "\r\n");
+        break :brk_date std.mem.trimEnd(u8, output, "\r\n");
     };
     return .{
         .git_hash = hash,
@@ -70,7 +70,7 @@ pub fn addLibs(self: *const Self, exe: *std.Build.Step.Compile, b: *std.Build) v
 
     //   exe.addIncludePath(b.path("lib"));
     // Add sqlite3;
-    exe.addCSourceFile(.{
+    exe.root_module.addCSourceFile(.{
         .file = b.path("lib/sqlite3.c"),
         .flags = &[_][]const u8{
             "-DSQLITE_DQS=0",
@@ -94,19 +94,15 @@ pub fn addLibs(self: *const Self, exe: *std.Build.Step.Compile, b: *std.Build) v
     });
 }
 
-pub fn addOptions(self: *const Self, step: *std.Build.Step.Options) !void {
-    var buf: [1024]u8 = undefined;
-
-    step.addOption([]const u8, "name", "Z Math");
-    step.addOption([]const u8, "git_hash", self.git_hash);
-    step.addOption([]const u8, "git_hash_short", self.git_hash_short);
-    step.addOption([]const u8, "compiled_date", self.compiled_date);
-    step.addOption(std.SemanticVersion, "version", self.version);
-    step.addOption([:0]const u8, "version_string", try std.fmt.bufPrintZ(
-        &buf,
-        "{f}",
-        .{self.version},
-    ));
+pub fn addOptions(self: *const Self, b: *std.Build, m: *std.Build.Module) void {
+    const option = b.addOptions();
+    option.addOption([]const u8, "name", "Z Math");
+    option.addOption([]const u8, "git_hash", self.git_hash);
+    option.addOption([]const u8, "git_hash_short", self.git_hash_short);
+    option.addOption([]const u8, "compiled_date", self.compiled_date);
+    option.addOption(std.SemanticVersion, "version", self.version);
+    option.addOption([]const u8, "version_string", b.fmt("{f}", .{self.version}));
+    m.addOptions("build_options", option);
 }
 
 // pub fn run(self: Version, alloc: Allocator) !u8 {

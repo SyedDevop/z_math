@@ -13,6 +13,7 @@ pub fn build(b: *std.Build) !void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .link_libc = true,
         }),
     });
 
@@ -20,20 +21,15 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-
-    const build_options = b.addOptions();
-    exe.root_module.addImport("zqlite", zqlite.module("zqlite"));
-    const zarg_dep = b.dependency("zarg", .{
+    const zarg = b.dependency("zarg", .{
         .target = target,
         .optimize = optimize,
     });
+    exe.root_module.addImport("zqlite", zqlite.module("zqlite"));
+    exe.root_module.addImport("zarg", zarg.module("zarg"));
 
-    exe.root_module.addImport("zarg", zarg_dep.module("zarg"));
     config.addLibs(exe, b);
-    try config.addOptions(build_options);
-
-    exe.root_module.addOptions("build_options", build_options);
-    exe.linkLibC();
+    config.addOptions(b, exe.root_module);
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);

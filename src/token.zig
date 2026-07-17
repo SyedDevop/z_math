@@ -50,7 +50,7 @@ pub const Token = union(enum) {
         };
     }
 
-    pub fn tokenValue(tok: Token, prefix: ?[]const u8, writer: *std.io.Writer) !void {
+    pub fn tokenValue(tok: Token, prefix: ?[]const u8, writer: *std.Io.Writer) !void {
         switch (tok) {
             .num => |n| try writer.print("{s} {d}", .{ prefix orelse "", n }),
             .word => |w| try writer.print("{s} {s}", .{ prefix orelse "", w }),

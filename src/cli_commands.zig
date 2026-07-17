@@ -42,32 +42,32 @@ pub const myCLiCmdList = [_]CmdType{
         .print_help_for_min_pos_arg = true,
         .options = &.{
             .{
-                .long = "--interactive",
-                .short = "-i",
+                .long = "interactive",
+                .short = 'i',
                 .info = "Start interactive mode to evaluate expressions based on previous results.",
                 .value = .{ .bool = null },
             },
             .{
-                .long = "--inr",
-                .short = "-n",
+                .long = "inr",
+                .short = 'n',
                 .info = "Prints the number in Indian rupee formate.",
                 .value = .{ .bool = false },
             },
             .{
-                .long = "--currency",
-                .short = "-c",
+                .long = "currency",
+                .short = 'c',
                 .info = "Converts amount from specified currency to INR (default: USD -> INR). Pass 'list' for available currencies.",
                 .value = .{ .str = "usd" },
             },
             .{
-                .long = "--word",
-                .short = "-w",
+                .long = "word",
+                .short = 'w',
                 .info = "Prints the number in words.",
                 .value = .{ .bool = null },
             },
             .{
-                .long = "--raw",
-                .short = "-r",
+                .long = "raw",
+                .short = 'r',
                 .info = "Prints the raw result of the expression without any formatting.",
                 .value = .{ .bool = null },
             },
@@ -97,14 +97,14 @@ pub const myCLiCmdList = [_]CmdType{
         .print_help_for_min_pos_arg = true,
         .options = &.{
             .{
-                .long = "--word",
-                .short = "-w",
+                .long = "word",
+                .short = 'w',
                 .info = "Prints the number in words.",
                 .value = .{ .bool = null },
             },
             .{
-                .long = "--list",
-                .short = "-l",
+                .long = "list",
+                .short = 'l',
                 .info = "Lists all available currencies.",
                 .value = .{ .bool = null },
             },
@@ -128,8 +128,8 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command convert values between different units of Mass.",
         .options = &.{
             .{
-                .long = "--unit",
-                .short = "-u",
+                .long = "unit",
+                .short = 'u',
                 .info = "Displays all the support units.",
                 .value = .{ .bool = null },
             },
@@ -153,8 +153,8 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command convert values between different units of length.",
         .options = &.{
             .{
-                .long = "--unit",
-                .short = "-u",
+                .long = "unit",
+                .short = 'u',
                 .info = "Displays all the support units.",
                 .value = .{ .bool = null },
             },
@@ -172,8 +172,8 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command convert values between different units of volume.",
         .options = &.{
             .{
-                .long = "--unit",
-                .short = "-u",
+                .long = "unit",
+                .short = 'u',
                 .info = "Displays all the support units.",
                 .value = .{ .bool = null },
             },
@@ -191,8 +191,8 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command convert values between different units of Temperature.",
         .options = &.{
             .{
-                .long = "--unit",
-                .short = "-u",
+                .long = "unit",
+                .short = 'u',
                 .info = "Displays all the support units.",
                 .value = .{ .bool = null },
             },
@@ -213,14 +213,14 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command delete the expressions for given [ID].",
         .options = &.{
             .{
-                .long = "--all",
-                .short = "-a",
+                .long = "all",
+                .short = 'a',
                 .info = "Delete all the entries.",
                 .value = .{ .bool = false },
             },
             .{
-                .long = "--range",
-                .short = "-r",
+                .long = "range",
+                .short = 'r',
                 .info = "Delete range of the entries. |uasge: 10..15 |",
                 .value = .{ .str = null },
             },
@@ -234,32 +234,32 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command displays the history of previously evaluated expressions. By default, it shows the main history log.",
         .options = &.{
             .{
-                .long = "--type",
-                .short = "-t",
+                .long = "type",
+                .short = 't',
                 .info = "Specifies the type of history to display. Options include: 'main', 'length' and 'area'. The default is . all",
                 .value = .{ .str = null },
             },
             .{
-                .long = "--all",
-                .short = "-a",
+                .long = "all",
+                .short = 'a',
                 .info = "Display all the entries.",
                 .value = .{ .bool = false },
             },
             .{
-                .long = "--show-id",
-                .short = "-id",
+                .long = "show-id",
+                .short = 'i',
                 .info = "Display Id for the entries.",
                 .value = .{ .bool = false },
             },
             .{
-                .long = "--earlier",
-                .short = "-e",
+                .long = "earlier",
+                .short = 'e',
                 .info = "Display history entries from the earliest to the most recent. Defaults to showing recent entries.",
                 .value = .{ .bool = false },
             },
             .{
-                .long = "--limit",
-                .short = "-l",
+                .long = "limit",
+                .short = 'l',
                 .info = "Limit the number of history entries displayed. Default is 5.",
                 .value = .{ .num = 5 },
             },
@@ -281,8 +281,8 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command configurer you z_math.",
         .options = &.{
             .{
-                .long = "--db-path",
-                .short = "-dp",
+                .long = "db-path",
+                .short = 'd',
                 .info = "Print the dp path.",
                 .value = .{ .bool = false },
             },

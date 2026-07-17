@@ -13,7 +13,7 @@ const native_os = builtin.os.tag;
 const HOME_ENV_L = "HOME";
 const HOME_ENV_W = "LOCALAPPDATA";
 
-pub fn getDbPath(alloc: Allocator) ![:0]u8 {
+pub fn getDbPath(alloc: Allocator, env_map: *std.process.Environ.Map) ![:0]u8 {
     const home_env = switch (native_os) {
         .windows => HOME_ENV_W,
         .linux => HOME_ENV_L,
@@ -22,8 +22,7 @@ pub fn getDbPath(alloc: Allocator) ![:0]u8 {
             std.process.exit(1);
         },
     };
-    const base_path = try std.process.getEnvVarOwned(alloc, home_env);
-    defer alloc.free(base_path);
+    const base_path = env_map.get(home_env) orelse "";
     return try std.fs.path.joinZ(alloc, &.{ base_path, "z_math" });
 }
 
@@ -34,8 +33,8 @@ pub const DB = struct {
 
     conn: zqlite.Conn,
     path: [:0]u8,
-    pub fn init(allocator: Allocator) !Self {
-        const db_path = try getDbPath(allocator);
+    pub fn init(allocator: Allocator, env_map: *std.process.Environ.Map) !Self {
+        const db_path = try getDbPath(allocator, env_map);
         const flags = zqlite.OpenFlags.Create | zqlite.OpenFlags.EXResCode;
         var conn = try zqlite.open(db_path, flags);
         try createTable(&conn);

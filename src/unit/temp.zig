@@ -1,5 +1,5 @@
 const std = @import("std");
-const Writer = std.io.Writer;
+const Writer = std.Io.Writer;
 
 const Lexer = @import("../lexer.zig");
 const Unit = @import("unit_object.zig");

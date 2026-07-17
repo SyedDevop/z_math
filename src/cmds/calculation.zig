@@ -79,7 +79,7 @@ pub fn compute(self: *Self, lex: *Lexer) !f128 {
 /// - Computation hasn't been completed (`error.ComputationNotDone`)
 ///     * run [compute(...)] this function before calling this function.
 /// ```
-pub fn dump(self: *const Self, cli: *ComputedArg, db: *Db, exe_id: u64, writer: *std.io.Writer) !void {
+pub fn dump(self: *const Self, io: std.Io, cli: *ComputedArg, db: *Db, exe_id: u64, writer: *std.Io.Writer) !void {
     if (!self.is_computed_number_set) return error.ComputationNotDone;
 
     // FIX: The number printed is not correct above sqr(114)
@@ -115,7 +115,7 @@ pub fn dump(self: *const Self, cli: *ComputedArg, db: *Db, exe_id: u64, writer: 
         switch (curr) {
             .list => try Exchange.Currency.printAvailable(writer),
             else => {
-                const exchange_curr = try Exchange.rate(self.alloc, self.computed_number, curr, .inr);
+                const exchange_curr = try Exchange.rate(self.alloc, io, self.computed_number, curr, .inr);
                 const nums = try FmtCurr.formateToRupees(self.alloc, exchange_curr);
                 defer self.alloc.free(nums);
                 try writer.print("Exchange rate for {d} {s} is {s}\n", .{ self.computed_number, @tagName(curr), nums });

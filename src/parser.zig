@@ -108,8 +108,9 @@ pub const Parser = struct {
     pub fn evaluate_errors(self: Self, input: []const u8) !void {
         if (self.errors.items.len == 0) return;
         var buf: [256]u8 = undefined;
-        const stderr = std.debug.lockStderrWriter(&buf);
-        defer std.debug.unlockStderrWriter();
+        var stderr_file = std.debug.lockStderr(&buf).file_writer;
+        var stderr = &stderr_file.interface;
+        defer std.debug.unlockStderr();
         for (self.errors.items) |err| {
             try stderr.print("The input is :: {s} ::\n", .{input});
             const errorType = if (err.level == .err) "✘ Error " else "⚠ Waring"; // try stderr.print("\x1b[31mError: {s}\x1b[0m\n", .{err.message});
