@@ -27,11 +27,18 @@ pub fn init(input: []const u8, lex: *Lexer) Self {
 
 fn parse(self: *Self) !void {
     try self.unit.parse();
-    return;
+    if (self.unit.from == null) {
+        self.unit.from = tempMap.get("f").?;
+    }
+    if (self.unit.to == null) {
+        const from: UnitValue = self.unit.from orelse .{ .name = "", .v = 0 };
+        const from_enum = std.meta.stringToEnum(TempType, from.name);
+        self.unit.to = if (from_enum != null and from_enum.? == .Fahrenheit) tempMap.get("c").? else tempMap.get("f").?;
+    }
 }
 
 pub fn printUnits(self: *const Self, w: *Writer) !void {
-    try self.unit.printUnits(w, "Temperature's");
+    return self.unit.printUnits(w, "Temperature's");
 }
 
 pub fn calculate(self: *Self, w: *Writer) !f64 {
