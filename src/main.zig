@@ -49,26 +49,32 @@ const NO_HISTORY_MES =
 ;
 
 const AUTOCOMPLETION =
-    \\ _m_cli_autocomplete() {{
-    \\     local cur prev opts
-    \\     COMPREPLY=()
+    \\_m_cli_autocomplete() {{
+    \\    local cur prev cmd opts global_flags
+    \\    COMPREPLY=()
     \\
-    \\     # Get the current word the user is typing
-    \\     cur="${{COMP_WORDS[COMP_CWORD]}}"
+    \\    cur="${{COMP_WORDS[COMP_CWORD]}}"
+    \\    prev="${{COMP_WORDS[COMP_CWORD-1]}}"
+    \\    cmd="${{COMP_WORDS[1]}}"
     \\
-    \\     # Get the previous word on the command line
-    \\     prev="${{COMP_WORDS[COMP_CWORD-1]}}"
+    \\    opts="{[opts]s}"
+    \\    global_flags="{[global_flags]s}"
+    \\    root_flags="{[root_flags]s}"
+    \\    if (( COMP_CWORD == 1 )); then
+    \\      COMPREPLY=( $(compgen -W "$opts $root_flags $global_flags" -- "$cur") )
+    \\      return 0
+    \\    fi
+    \\    case "$cmd" in
+    \\        {[case_cmds]s}
+    \\        *)
+    \\            COMPREPLY=( $(compgen -W "$global_flags" -- "$cur") )
+    \\            ;;
+    \\    esac
     \\
-    \\     # Define possible commands for autocompletion
-    \\     opts="{s}"
+    \\    return 0
+    \\}}
     \\
-    \\     # Use compgen to generate the possible completions based on cur
-    \\     COMPREPLY=( $(compgen -W "${{opts}}" -- ${{cur}}) )
-    \\
-    \\     return 0
-    \\ }}
-    \\
-    \\ complete -F _m_cli_autocomplete m
+    \\complete -F _m_cli_autocomplete m
 ;
 
 const cmds = @import("./cmds/cmds.zig");
@@ -302,7 +308,49 @@ pub fn main(init: std.process.Init) !void {
         .completion => {
             const opts = try CliCmds.MyCLiCmds.getCmdNameList(allocator);
             defer allocator.free(opts);
-            try stdout.print(AUTOCOMPLETION, .{std.mem.trimEnd(u8, opts, " ")});
+
+            var w_alloc: std.Io.Writer.Allocating = .init(allocator);
+            defer w_alloc.deinit();
+
+            var w = &w_alloc.writer;
+
+            for (Cli.DEFAULT_ARGS, 0..) |ar, i| {
+                if (i > 0) try w.writeByte(' ');
+                try w.print("--{s} -{c}", .{ ar.long.?, ar.short.? });
+            }
+            const global_flags = try allocator.dupe(u8, w.buffered());
+            defer allocator.free(global_flags);
+            _ = w.consumeAll();
+            var root_flags: []const u8 = undefined;
+            defer allocator.free(root_flags);
+            for (CliCmds.myCLiCmdList) |cmd| {
+                if (cmd.name == .root) {
+                    if (cmd.options) |opt| for (opt, 0..) |arg, i| {
+                        if (i != 0) try w.writeByte(' ');
+                        try w.print("--{s} -{c}", .{ arg.long.?, arg.short.? });
+                    };
+                    root_flags = try allocator.dupe(u8, w.buffered());
+                    _ = w.consumeAll();
+                    continue;
+                }
+                try w.print("        {t})\n", .{cmd.name});
+                try w.writeAll("            COMPREPLY=( $(compgen -W \"");
+
+                if (cmd.options) |opt| for (opt, 0..) |arg, i| {
+                    if (i != 0) try w.writeByte(' ');
+                    try w.print("--{s} -{c}", .{ arg.long.?, arg.short.? });
+                };
+
+                try w.writeAll(" $global_flags\" -- \"$cur\") )\n");
+                try w.writeAll("            ;;\n");
+            }
+            const commands = w.buffered();
+            try stdout.print(AUTOCOMPLETION, .{
+                .opts = std.mem.trimEnd(u8, opts, " "),
+                .global_flags = global_flags,
+                .case_cmds = commands,
+                .root_flags = root_flags,
+            });
         },
     }
 }
@@ -312,79 +360,3 @@ test {
     _ = @import("pkg/rupees_formate_test.zig");
     _ = @import("pkg/num_words_test.zig");
 }
-// const ex = std.testing.expectEqualDeep;
-// test "Lexer" {
-//     var lex = Lexer.init("3 + 4 * 2 / ( 1 - 5 ) ^ 2 ^ 3", std.testing.allocator);
-//     const tokens = [_]Token{
-//         .{ .num = 3 },
-//         .{ .operator = '+' },
-//         .{ .num = 4 },
-//         .{ .operator = '*' },
-//         .{ .num = 2 },
-//         .{ .operator = '/' },
-//         .lparen,
-//         .{ .num = 1 },
-//         .{ .operator = '-' },
-//         .{ .num = 5 },
-//         .rparen,
-//         .{ .operator = '^' },
-//         .{ .num = 2 },
-//         .{ .operator = '^' },
-//         .{ .num = 3 },
-//         .eof,
-//     };
-//     for (tokens) |token| {
-//         const tok = lex.nextToke();
-//         try ex(token, tok);
-//     }
-// }
-// test "Lexer Lenght" {
-//     var lex = Lexer.init("mm:45:ft", std.testing.allocator);
-//     const tokens = [_]Token{
-//         .mm,
-//         .colon,
-//         .{ .num = 45 },
-//         .colon,
-//         .ft,
-//         .eof,
-//     };
-//     for (tokens) |token| {
-//         const tok = lex.nextToke();
-//         try ex(token, tok);
-//     }
-// }
-// test "Read file" {
-//     if (std.zig.EnvVar.HOME.getPosix()) |home| {
-//         const dir_path = try std.fs.path.join(std.testing.allocator, &.{ home, ".config/.z_math" });
-//         defer std.testing.allocator.free(dir_path);
-//         // try std.fs.makeDirAbsolute(dir_path);
-//
-//         const file_path = try std.fs.path.join(std.testing.allocator, &.{ dir_path, ".zmath.json" });
-//         defer std.testing.allocator.free(file_path);
-//
-//         const file = std.fs.cwd().openFile(file_path, .{ .mode = .read_write }) catch |e| {
-//             switch (e) {
-//                 .FileNotFound => {
-//                     try std.fs.cwd().createFile(file_path, .{});
-//                     return;
-//                 },
-//                 else => return e,
-//             }
-//         };
-//
-//         defer file.close();
-//         const stat = try file.stat();
-//         try file.seekTo(stat.size);
-//
-//         const bytes_written = try file.writeAll("\n--Uzer\nSyed Uzair||Hello||Jo||50||6011212");
-//         _ = bytes_written;
-//
-//         try file.seekTo(0);
-//         var buffer: [100]u8 = undefined;
-//         _ = try file.readAll(&buffer);
-//         std.debug.print("{s}", .{buffer});
-//     } else {
-//         std.debug.print("conf_path Not found", .{});
-//     }
-//     // try std.testing.expect(std.mem.eql(u8, buffer[0..11], "Hello File!"));
-// }
