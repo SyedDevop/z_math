@@ -139,7 +139,7 @@ pub fn main(init: std.process.Init) !void {
         },
 
         .exchange => {
-            if (try cli.getBoolArg("--list")) {
+            if (try cli.getBoolArg("list")) {
                 try Exchange.Currency.printAvailable(stdout);
                 return;
             }
@@ -179,7 +179,7 @@ pub fn main(init: std.process.Init) !void {
                     } else {
                         print("{d:0>6.3} {t}\n", .{ exchange_curr, to_curr.? });
                     }
-                    if (try cli.getBoolArg("--word")) {
+                    if (try cli.getBoolArg("word")) {
                         const word = try NumWord.numToWord(allocator, @intFromFloat(exchange_curr));
                         defer allocator.free(word);
                         try answer_word_style.fmtRender("{s}\n", .{word}, stdout);
@@ -189,7 +189,7 @@ pub fn main(init: std.process.Init) !void {
         },
 
         .delete => {
-            if (try cli.getStrArg("--range")) |range| {
+            if (try cli.getStrArg("range")) |range| {
                 var ranges = std.mem.splitSequence(u8, range, "..");
                 const from: u64 = try utils.parseUintBase10(u64, ranges.next());
                 const to: u64 = try utils.parseUintBase10(u64, ranges.next());
@@ -201,7 +201,7 @@ pub fn main(init: std.process.Init) !void {
                 db.delRangeExpr(from, to);
                 std.debug.print("Deleted entries {d}..{d} ", .{ from, to });
             }
-            if (try cli.getBoolArg("--all")) {
+            if (try cli.getBoolArg("all")) {
                 db.delAllExpr();
                 std.debug.print("All entries have been successfully deleted.\n", .{});
             }
@@ -209,7 +209,7 @@ pub fn main(init: std.process.Init) !void {
 
         .length => {
             var length = Unit.init(input, &lex, &Length.LENGTH_MAP);
-            if (try cli.getBoolArg("-u")) {
+            if (try cli.getBoolArg("u")) {
                 try length.printUnits(stdout, "Length");
                 return;
             }
@@ -222,7 +222,7 @@ pub fn main(init: std.process.Init) !void {
         .mass => {
             var mass = Unit.init(input, &lex, &Mass.massMap);
 
-            if (try cli.getBoolArg("-u")) {
+            if (try cli.getBoolArg("u")) {
                 try mass.printUnits(stdout, "Mass");
                 return;
             }
@@ -234,7 +234,7 @@ pub fn main(init: std.process.Init) !void {
 
         .volume => {
             var volume = Unit.init(input, &lex, &Volume.volMap);
-            if (try cli.getBoolArg("-u")) {
+            if (try cli.getBoolArg("u")) {
                 try volume.printUnits(stdout, "Volume");
                 return;
             }
@@ -247,7 +247,7 @@ pub fn main(init: std.process.Init) !void {
         .temp => {
             var tempe = Tempe.init(input, &lex);
 
-            if (try cli.getBoolArg("-u")) {
+            if (try cli.getBoolArg("u")) {
                 try tempe.printUnits(stdout);
                 return;
             }
@@ -262,9 +262,9 @@ pub fn main(init: std.process.Init) !void {
         },
 
         .history => {
-            const is_id = try cli.getBoolArg("-id");
-            const order = if (try cli.getBoolArg("-e")) Order.ASC else Order.DESC;
-            if (try cli.getBoolArg("--all")) {
+            const is_id = try cli.getBoolArg("id");
+            const order = if (try cli.getBoolArg("e")) Order.ASC else Order.DESC;
+            if (try cli.getBoolArg("all")) {
                 const rows = try db.getAllExprs(order);
                 defer {
                     for (rows) |row| row.destory(allocator);
@@ -279,7 +279,7 @@ pub fn main(init: std.process.Init) !void {
                 }
                 return;
             }
-            const limit: u64 = if (try cli.getNumArg("-l")) |l| @intCast(l) else 5;
+            const limit: u64 = if (try cli.getNumArg("l")) |l| @intCast(l) else 5;
             const rows = try db.getExprs(.{ .limit = limit, .order = order });
             defer {
                 for (rows) |row| row.destory(allocator);
@@ -297,7 +297,7 @@ pub fn main(init: std.process.Init) !void {
         },
 
         .config => {
-            const showDb = try cli.getBoolArg("-dp");
+            const showDb = try cli.getBoolArg("dp");
             if (showDb) {
                 std.debug.print("{s}\n", .{db.path});
                 return;
