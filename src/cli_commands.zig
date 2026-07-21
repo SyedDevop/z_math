@@ -128,9 +128,9 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command convert values between different units of Mass.",
         .options = &.{
             .{
-                .long = "unit",
-                .short = 'u',
-                .info = "Displays all the support units.",
+                .long = "list",
+                .short = 'l',
+                .info = "List all the support units.",
                 .value = .{ .bool = null },
             },
         },
@@ -153,9 +153,9 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command convert values between different units of length.",
         .options = &.{
             .{
-                .long = "unit",
-                .short = 'u',
-                .info = "Displays all the support units.",
+                .long = "list",
+                .short = 'l',
+                .info = "List all the support units.",
                 .value = .{ .bool = null },
             },
         },
@@ -172,9 +172,9 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command convert values between different units of volume.",
         .options = &.{
             .{
-                .long = "unit",
-                .short = 'u',
-                .info = "Displays all the support units.",
+                .long = "list",
+                .short = 'l',
+                .info = "List all the support units.",
                 .value = .{ .bool = null },
             },
         },
@@ -191,9 +191,9 @@ pub const myCLiCmdList = [_]CmdType{
         .info = "This command convert values between different units of Temperature.",
         .options = &.{
             .{
-                .long = "unit",
-                .short = 'u',
-                .info = "Displays all the support units.",
+                .long = "list",
+                .short = 'l',
+                .info = "List all the support units.",
                 .value = .{ .bool = null },
             },
         },

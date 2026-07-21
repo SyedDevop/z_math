@@ -209,7 +209,7 @@ pub fn main(init: std.process.Init) !void {
 
         .length => {
             var length = Unit.init(input, &lex, &Length.LENGTH_MAP);
-            if (try cli.getBoolArg("u")) {
+            if (try cli.getBoolArg("l")) {
                 try length.printUnits(stdout, "Length");
                 return;
             }
@@ -222,7 +222,7 @@ pub fn main(init: std.process.Init) !void {
         .mass => {
             var mass = Unit.init(input, &lex, &Mass.massMap);
 
-            if (try cli.getBoolArg("u")) {
+            if (try cli.getBoolArg("l")) {
                 try mass.printUnits(stdout, "Mass");
                 return;
             }
@@ -234,7 +234,7 @@ pub fn main(init: std.process.Init) !void {
 
         .volume => {
             var volume = Unit.init(input, &lex, &Volume.volMap);
-            if (try cli.getBoolArg("u")) {
+            if (try cli.getBoolArg("l")) {
                 try volume.printUnits(stdout, "Volume");
                 return;
             }
@@ -247,7 +247,7 @@ pub fn main(init: std.process.Init) !void {
         .temp => {
             var tempe = Tempe.init(input, &lex);
 
-            if (try cli.getBoolArg("u")) {
+            if (try cli.getBoolArg("l")) {
                 try tempe.printUnits(stdout);
                 return;
             }
