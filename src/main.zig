@@ -50,6 +50,9 @@ const NO_HISTORY_MES =
 
 const AUTOCOMPLETION =
     \\_m_cli_autocomplete() {{
+    \\    declare -A CMD_OPTS=(
+    \\      {[cmd_opts]s}
+    \\    )
     \\    local cur prev cmd opts global_flags
     \\    COMPREPLY=()
     \\
@@ -59,17 +62,14 @@ const AUTOCOMPLETION =
     \\
     \\    opts="{[opts]s}"
     \\    global_flags="{[global_flags]s}"
-    \\    root_flags="{[root_flags]s}"
     \\    if (( COMP_CWORD == 1 )); then
-    \\      COMPREPLY=( $(compgen -W "$opts $root_flags $global_flags" -- "$cur") )
+    \\      COMPREPLY=( $(compgen -W "$opts ${{CMD_OPTS['root']}} $global_flags" -- "$cur") )
     \\      return 0
+    \\    elif [[ -n ${{CMD_OPTS[$cmd]}} ]]; then
+    \\       COMPREPLY=( $(compgen -W "${{CMD_OPTS[$cmd]}} $global_flags" -- "$cur") )
+    \\    else
+    \\       COMPREPLY=( $(compgen -W "$global_flags" -- "$cur") )
     \\    fi
-    \\    case "$cmd" in
-    \\        {[case_cmds]s}
-    \\        *)
-    \\            COMPREPLY=( $(compgen -W "$global_flags" -- "$cur") )
-    \\            ;;
-    \\    esac
     \\
     \\    return 0
     \\}}
@@ -321,35 +321,35 @@ pub fn main(init: std.process.Init) !void {
             const global_flags = try allocator.dupe(u8, w.buffered());
             defer allocator.free(global_flags);
             _ = w.consumeAll();
-            var root_flags: []const u8 = undefined;
-            defer allocator.free(root_flags);
+            // var root_flags: []const u8 = undefined;
+            // defer allocator.free(root_flags);
+
             for (CliCmds.myCLiCmdList) |cmd| {
+                // if (cmd.name == .root) {
+                //     if (cmd.options) |opt| for (opt, 0..) |arg, i| {
+                //         if (i != 0) try w.writeByte(' ');
+                //         try w.print("--{s} -{c}", .{ arg.long.?, arg.short.? });
+                //     };
+                //     root_flags = try allocator.dupe(u8, w.buffered());
+                //     _ = w.consumeAll();
+                //     continue;
+                // }
                 if (cmd.name == .root) {
-                    if (cmd.options) |opt| for (opt, 0..) |arg, i| {
-                        if (i != 0) try w.writeByte(' ');
-                        try w.print("--{s} -{c}", .{ arg.long.?, arg.short.? });
-                    };
-                    root_flags = try allocator.dupe(u8, w.buffered());
-                    _ = w.consumeAll();
-                    continue;
-                }
-                try w.print("        {t})\n", .{cmd.name});
-                try w.writeAll("            COMPREPLY=( $(compgen -W \"");
+                    try w.writeAll("[\"root\"]=\"");
+                } else try w.print("[\"{t}\"]=\"", .{cmd.name});
 
                 if (cmd.options) |opt| for (opt, 0..) |arg, i| {
                     if (i != 0) try w.writeByte(' ');
-                    try w.print("--{s} -{c}", .{ arg.long.?, arg.short.? });
+                    if (arg.long) |l| try w.print("--{s}", .{l});
+                    if (arg.short) |s| try w.print(" -{c}", .{s});
                 };
-
-                try w.writeAll(" $global_flags\" -- \"$cur\") )\n");
-                try w.writeAll("            ;;\n");
+                try w.writeAll("\"\n      ");
             }
             const commands = w.buffered();
             try stdout.print(AUTOCOMPLETION, .{
                 .opts = std.mem.trimEnd(u8, opts, " "),
                 .global_flags = global_flags,
-                .case_cmds = commands,
-                .root_flags = root_flags,
+                .cmd_opts = commands,
             });
         },
     }
