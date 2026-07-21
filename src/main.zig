@@ -57,7 +57,6 @@ const AUTOCOMPLETION =
     \\    COMPREPLY=()
     \\
     \\    cur="${{COMP_WORDS[COMP_CWORD]}}"
-    \\    prev="${{COMP_WORDS[COMP_CWORD-1]}}"
     \\    cmd="${{COMP_WORDS[1]}}"
     \\
     \\    opts="{[opts]s}"
@@ -321,19 +320,8 @@ pub fn main(init: std.process.Init) !void {
             const global_flags = try allocator.dupe(u8, w.buffered());
             defer allocator.free(global_flags);
             _ = w.consumeAll();
-            // var root_flags: []const u8 = undefined;
-            // defer allocator.free(root_flags);
 
             for (CliCmds.myCLiCmdList) |cmd| {
-                // if (cmd.name == .root) {
-                //     if (cmd.options) |opt| for (opt, 0..) |arg, i| {
-                //         if (i != 0) try w.writeByte(' ');
-                //         try w.print("--{s} -{c}", .{ arg.long.?, arg.short.? });
-                //     };
-                //     root_flags = try allocator.dupe(u8, w.buffered());
-                //     _ = w.consumeAll();
-                //     continue;
-                // }
                 if (cmd.name == .root) {
                     try w.writeAll("[\"root\"]=\"");
                 } else try w.print("[\"{t}\"]=\"", .{cmd.name});
