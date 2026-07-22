@@ -48,34 +48,6 @@ const NO_HISTORY_MES =
     \\Use -h or --help for more info.
 ;
 
-const AUTOCOMPLETION =
-    \\_m_cli_autocomplete() {{
-    \\    declare -A CMD_OPTS=(
-    \\      {[cmd_opts]s}
-    \\    )
-    \\    local cur prev cmd opts global_flags
-    \\    COMPREPLY=()
-    \\
-    \\    cur="${{COMP_WORDS[COMP_CWORD]}}"
-    \\    cmd="${{COMP_WORDS[1]}}"
-    \\
-    \\    opts="{[opts]s}"
-    \\    global_flags="{[global_flags]s}"
-    \\    if (( COMP_CWORD == 1 )); then
-    \\      COMPREPLY=( $(compgen -W "$opts ${{CMD_OPTS['root']}} $global_flags" -- "$cur") )
-    \\      return 0
-    \\    elif [[ -n ${{CMD_OPTS[$cmd]}} ]]; then
-    \\       COMPREPLY=( $(compgen -W "${{CMD_OPTS[$cmd]}} $global_flags" -- "$cur") )
-    \\    else
-    \\       COMPREPLY=( $(compgen -W "$global_flags" -- "$cur") )
-    \\    fi
-    \\
-    \\    return 0
-    \\}}
-    \\
-    \\complete -F _m_cli_autocomplete m
-;
-
 const cmds = @import("./cmds/cmds.zig");
 const Calculation = cmds.Calculation;
 
@@ -305,40 +277,9 @@ pub fn main(init: std.process.Init) !void {
         },
 
         .completion => {
-            const opts = try CliCmds.MyCLiCmds.getCmdNameList(allocator);
-            defer allocator.free(opts);
-
-            var w_alloc: std.Io.Writer.Allocating = .init(allocator);
-            defer w_alloc.deinit();
-
-            var w = &w_alloc.writer;
-
-            for (Cli.DEFAULT_ARGS, 0..) |ar, i| {
-                if (i > 0) try w.writeByte(' ');
-                try w.print("--{s} -{c}", .{ ar.long.?, ar.short.? });
-            }
-            const global_flags = try allocator.dupe(u8, w.buffered());
-            defer allocator.free(global_flags);
-            _ = w.consumeAll();
-
-            for (CliCmds.myCLiCmdList) |cmd| {
-                if (cmd.name == .root) {
-                    try w.writeAll("[\"root\"]=\"");
-                } else try w.print("[\"{t}\"]=\"", .{cmd.name});
-
-                if (cmd.options) |opt| for (opt, 0..) |arg, i| {
-                    if (i != 0) try w.writeByte(' ');
-                    if (arg.long) |l| try w.print("--{s}", .{l});
-                    if (arg.short) |s| try w.print(" -{c}", .{s});
-                };
-                try w.writeAll("\"\n      ");
-            }
-            const commands = w.buffered();
-            try stdout.print(AUTOCOMPLETION, .{
-                .opts = std.mem.trimEnd(u8, opts, " "),
-                .global_flags = global_flags,
-                .cmd_opts = commands,
-            });
+            const bash = try cli.getCompletion(allocator, .bash);
+            defer allocator.free(bash);
+            try stdout.print("{s}\n", .{bash});
         },
     }
 }
