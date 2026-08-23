@@ -34,7 +34,7 @@ const Mass = _unit.Mass;
 
 const pkg = @import("pkg/pkg.zig");
 const NumWord = pkg.NumWord;
-const FmtCurr = pkg.FmtCurr;
+const NumFmt = pkg.NumFmt;
 const Exchange = pkg.Exchange;
 
 const USAGE =
@@ -145,7 +145,7 @@ pub fn main(init: std.process.Init) !void {
                     const exchange_curr = try Exchange.rate(allocator, init.io, num, from_curr.?, to_curr orelse .inr);
                     print("Exchange rate: {d} {t} = ", .{ num, from_curr.? });
                     if (to_curr == null or to_curr == .inr) {
-                        const nums = try FmtCurr.formateToRupees(allocator, exchange_curr);
+                        const nums = try NumFmt.rupees(allocator, exchange_curr);
                         defer allocator.free(nums);
                         print("{s}\n", .{nums});
                     } else {
@@ -286,6 +286,6 @@ pub fn main(init: std.process.Init) !void {
 test {
     _ = @import("token.zig");
     _ = @import("lexer.zig");
-    _ = @import("pkg/rupees_formate_test.zig");
+    _ = @import("pkg/number_formate_test.zig");
     _ = @import("pkg/num_words_test.zig");
 }

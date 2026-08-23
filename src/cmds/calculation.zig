@@ -13,7 +13,7 @@ const Lexer = @import("../lexer.zig");
 const Parser = @import("../parser.zig").Parser;
 const pkg = @import("../pkg/pkg.zig");
 const NumWord = pkg.NumWord;
-const FmtCurr = pkg.FmtCurr;
+const NumFmt = pkg.NumFmt;
 const Exchange = pkg.Exchange;
 
 const std = @import("std");
@@ -97,7 +97,7 @@ pub fn dump(self: *const Self, io: std.Io, cli: *ComputedArg, db: *Db, exe_id: u
     try header_style.fmtRender("The input is :: {s} ::\n", .{self.input}, writer);
     if (!try cli.getBoolArg("inr")) try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
     if (try cli.getBoolArg("inr")) {
-        const nums = try FmtCurr.formateToRupees(self.alloc, self.computed_number);
+        const nums = try NumFmt.rupees(self.alloc, self.computed_number);
         defer self.alloc.free(nums);
         try answer_currency_style.fmtRender("{s}\n", .{nums}, writer);
     }
@@ -116,7 +116,7 @@ pub fn dump(self: *const Self, io: std.Io, cli: *ComputedArg, db: *Db, exe_id: u
             .list => try Exchange.Currency.printAvailable(writer),
             else => {
                 const exchange_curr = try Exchange.rate(self.alloc, io, self.computed_number, curr, .inr);
-                const nums = try FmtCurr.formateToRupees(self.alloc, exchange_curr);
+                const nums = try NumFmt.rupees(self.alloc, exchange_curr);
                 defer self.alloc.free(nums);
                 try writer.print("Exchange rate for {d} {s} is {s}\n", .{ self.computed_number, @tagName(curr), nums });
                 if (is_word_fmt) {

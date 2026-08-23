@@ -1,14 +1,26 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-pub fn formateToRupees(alloc: Allocator, n: f128) ![]u8 {
+pub fn rupees(alloc: Allocator, n: f128) ![]u8 {
+    const _rupees = try format(alloc, n, .rupees);
+    return _rupees;
+}
+
+const FormatType = enum {
+    number,
+    rupees,
+};
+pub fn format(alloc: Allocator, n: f128, fmType: FormatType) ![]u8 {
     var num_fmt = std.ArrayList(u8).empty;
 
     const decimal: usize = @intFromFloat(@abs(n));
     const str_decimals = try std.fmt.allocPrint(alloc, "{d}", .{decimal});
     defer alloc.free(str_decimals);
 
-    try num_fmt.appendSlice(alloc, "₹");
+    switch (fmType) {
+        .rupees => try num_fmt.appendSlice(alloc, "₹"),
+        .number => {},
+    }
     if (n < 0.0) {
         try num_fmt.appendSlice(alloc, " -");
     }
@@ -27,7 +39,6 @@ pub fn formateToRupees(alloc: Allocator, n: f128) ![]u8 {
     try num_fmt.print(alloc, ".{d:0>2}", .{fraction_number});
     return num_fmt.toOwnedSlice(alloc);
 }
-
 // ```py python example for International numbers
 // a = "1000000"
 // for i, e in enumerate(a):
