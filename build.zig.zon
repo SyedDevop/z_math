@@ -1,6 +1,6 @@
 .{
     .name = .z_math,
-    .version = "0.10.0",
+    .version = "0.10.1",
     .fingerprint = 0x295b0c4f9ce847d0,
     .dependencies = .{
         .zqlite = .{
