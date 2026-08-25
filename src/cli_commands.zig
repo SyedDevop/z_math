@@ -41,23 +41,29 @@ pub const myCLiCmdList = [_]CmdType{
         .min_arg = 0,
         .print_help_for_min_pos_arg = true,
         .options = &.{
-            .{
-                .long = "interactive",
-                .short = 'i',
-                .info = "Start interactive mode to evaluate expressions based on previous results.",
-                .value = .{ .bool = null },
-            },
+            // .{
+            //     .long = "interactive",
+            //     .short = 'i',
+            //     .info = "Start interactive mode to evaluate expressions based on previous results.",
+            //     .value = .{ .bool = null },
+            // },
             .{
                 .long = "inr",
-                .short = 'n',
                 .info = "Prints the number in Indian rupee formate.",
                 .value = .{ .bool = false },
+            },
+            .{
+                .long = "no-number",
+                .short = 'n',
+                .info = "Don't Prints the number in Indian number formate.",
+                .value = .{ .bool = null },
             },
             .{
                 .long = "currency",
                 .short = 'c',
                 .info = "Converts amount from specified currency to INR (default: USD -> INR). Pass 'list' for available currencies.",
-                .value = .{ .str = "usd" },
+                .value = .{ .str = null },
+                .allow_empty_string_value = true,
             },
             .{
                 .long = "word",

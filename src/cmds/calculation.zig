@@ -29,21 +29,18 @@ var header_style: Style = .{
 };
 
 var answer_style: Style = .{
-    .fontStyle = .{
-        .doublyUnderline = true,
-        .italic = true,
-    },
-    .fgColor = .toColor(192),
+    // .fontStyle = .{
+    //     // .doublyUnderline = true,
+    //     .italic = true,
+    // },
+    // .fgColor = .toColor(192),
+    .fontStyle = .{ .bold = true },
+    .fgColor = .toColor(84),
 };
 
 var answer_word_style: Style = .{
     .fontStyle = .{ .bold = true },
     .fgColor = .toColor(105),
-};
-
-var answer_currency_style: Style = .{
-    .fontStyle = .{ .bold = true },
-    .fgColor = .toColor(84),
 };
 
 pub fn init(alloc: Allocator, input: []const u8) Self {
@@ -83,32 +80,41 @@ pub fn dump(self: *const Self, io: std.Io, cli: *ComputedArg, db: *Db, exe_id: u
     if (!self.is_computed_number_set) return error.ComputationNotDone;
 
     // FIX: The number printed is not correct above sqr(114)
-    const output = try std.fmt.allocPrint(self.alloc, "{d}", .{self.computed_number});
-    defer self.alloc.free(output);
+    var formatted_number = try std.fmt.allocPrint(self.alloc, "{d}", .{self.computed_number});
+    defer self.alloc.free(formatted_number);
 
     if (builtin.os.tag == .windows) _ = std.os.windows.kernel32.SetConsoleOutputCP(65001);
 
-    db.addExpr(self.input, output, "root", exe_id);
+    db.addExpr(self.input, formatted_number, "root", exe_id);
     if (try cli.getBoolArg("raw")) {
-        try writer.print("{s}", .{output});
+        try writer.print("{s}", .{formatted_number});
         return;
     }
-
     try header_style.fmtRender("The input is :: {s} ::\n", .{self.input}, writer);
-    if (!try cli.getBoolArg("inr")) try answer_style.fmtRender("Ans: {s}\n", .{output}, writer);
-    if (try cli.getBoolArg("inr")) {
-        const nums = try NumFmt.rupees(self.alloc, self.computed_number);
-        defer self.alloc.free(nums);
-        try answer_currency_style.fmtRender("{s}\n", .{nums}, writer);
-    }
     const is_word_fmt = try cli.getBoolArg("word");
+    const fmt_inr = try cli.getBoolArg("inr");
+    const fmt_no_number = try cli.getBoolArg("no-number");
+
+    if (!fmt_no_number) {
+        self.alloc.free(formatted_number);
+        formatted_number = try NumFmt.format(
+            self.alloc,
+            self.computed_number,
+            if (fmt_inr) .rupees else .number,
+        );
+    }
+
+    try answer_style.fmtRender("{s}\n", .{formatted_number}, writer);
+
     if (is_word_fmt) {
         const word = try NumWord.numToWord(self.alloc, @intFromFloat(@abs(self.computed_number)));
         defer self.alloc.free(word);
         try answer_word_style.fmtRender("{s}\n", .{word}, writer);
     }
+
     if (try cli.getStrArg("currency")) |cr| {
-        const curr = std.meta.stringToEnum(Exchange.Currency, cr) orelse {
+        const c = if (std.mem.eql(u8, cr, "")) "usd" else cr;
+        const curr = std.meta.stringToEnum(Exchange.Currency, c) orelse {
             std.debug.print("Invalid Currency: {s}. Use currency 'list' to get the list of available currency\n", .{cr});
             return;
         };
