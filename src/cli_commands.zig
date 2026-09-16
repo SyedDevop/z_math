@@ -49,6 +49,7 @@ pub const myCLiCmdList = [_]CmdType{
             // },
             .{
                 .long = "inr",
+                .short = 'I',
                 .info = "Prints the number in Indian rupee formate.",
                 .value = .{ .bool = false },
             },
